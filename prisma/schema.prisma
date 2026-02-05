@@ -8,36 +8,36 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   category    String
   title       String
   description String?
   imageUrl    String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean @default(true)
 
   // "ACAI"  -> tem variantes + adicionais/caldas/extras
   // "COPO"  -> tem variantes + SABORES (choices), sem adicionais/extras/caldas
   // "SIMPLE"-> sem variantes, sem extras, só quantidade e preço base
-  kind        String   @default("ACAI")
+  kind String @default("ACAI")
 
   // usado quando kind = "SIMPLE"
-  basePriceCents Int  @default(0)
+  basePriceCents Int @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  variants    Variant[]
-  choices     ProductChoice[]
+  variants Variant[]
+  choices  ProductChoice[]
 }
 
 model Variant {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   productId  String
   label      String
   priceCents Int
-  sortOrder  Int      @default(0)
+  sortOrder  Int    @default(0)
 
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ProductChoice {
@@ -47,16 +47,16 @@ model ProductChoice {
   isActive  Boolean @default(true)
   sortOrder Int     @default(0)
 
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model OptionItem {
-  id         String   @id @default(cuid())
-  type       String   // "adicionais", "caldas", "cremes", "frutas", "toppings"
+  id         String  @id @default(cuid())
+  type       String // "adicionais", "caldas", "cremes", "frutas", "toppings"
   name       String
-  priceCents Int      @default(0)
-  isActive   Boolean  @default(true)
-  sortOrder  Int      @default(0)
+  priceCents Int     @default(0)
+  isActive   Boolean @default(true)
+  sortOrder  Int     @default(0)
 }
 
 model StoreSettings {
@@ -65,9 +65,26 @@ model StoreSettings {
   updatedAt DateTime @updatedAt
 }
 
+model User {
+  id       String @id @default(cuid())
+  name     String
+  phone    String @unique
+  passHash String
+  points   Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+}
+
 model Order {
-  id           String   @id @default(cuid())
-  createdAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // liga o pedido ao cliente logado (opcional)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
   customerName String?
   phone        String?
@@ -77,30 +94,30 @@ model Order {
   addressLine  String?
   reference    String?
 
-  payment      String?
-  notes        String?
+  payment String?
+  notes   String?
 
-  subtotalCents Int     @default(0)
-  deliveryFeeCents Int  @default(0)
-  totalCents    Int     @default(0)
+  subtotalCents    Int @default(0)
+  deliveryFeeCents Int @default(0)
+  totalCents       Int @default(0)
 
-  usedPoints    Int     @default(0)
-  earnedPoints  Int     @default(0)
+  usedPoints   Int @default(0)
+  earnedPoints Int @default(0)
 
-  items         OrderItem[]
+  items OrderItem[]
 }
 
 model OrderItem {
-  id         String @id @default(cuid())
-  orderId    String
+  id      String @id @default(cuid())
+  orderId String
 
-  productId   String
-  title       String
-  kind        String
-  variantLabel String?
-  qty         Int
+  productId      String
+  title          String
+  kind           String
+  variantLabel   String?
+  qty            Int
   unitPriceCents Int
-  extrasJson  String? // guarda extras/choices como JSON
+  extrasJson     String? // guarda extras/choices como JSON
 
-  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

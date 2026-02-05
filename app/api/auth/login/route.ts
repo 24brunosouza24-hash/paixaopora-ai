@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
@@ -26,7 +26,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Telefone ou senha inválidos." }, { status: 401 });
     }
 
-    // cookie simples: guarda o id do usuário (depois a gente melhora para JWT)
     const res = NextResponse.json({
       ok: true,
       user: { id: user.id, name: user.name, phone: user.phone, points: user.points },
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 dias
+      maxAge: 60 * 60 * 24 * 30,
     });
 
     return res;

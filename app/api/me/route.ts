@@ -17,8 +17,6 @@ export async function GET() {
       name: true,
       phone: true,
       points: true,
-      addressLine: true,
-      reference: true,
     },
   });
 
