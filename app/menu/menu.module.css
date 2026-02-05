@@ -1,0 +1,253 @@
+/* ================================
+   Açaí Point — Menu (estilo app)
+   FIX: modal (CartDrawer) não pode ser afetado por transform/overflow do card
+================================ */
+
+/* fundo */
+.page {
+  min-height: 100vh;
+  background: #f6e9f7;
+}
+
+/* largura + menos espaço vazio */
+.container {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 14px 0 32px;
+}
+
+/* ================================
+   Topbar
+================================ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 12px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #7a1fb8;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #7e7e7e;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.cartBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: #7a1fb8;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(122, 31, 184, 0.25);
+}
+
+/* ================================
+   Seções / Categorias
+================================ */
+.section {
+  margin-top: 12px;
+  padding-bottom: 18px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 10px;
+}
+
+.sectionBar {
+  width: 4px;
+  height: 18px;
+  border-radius: 999px;
+  background: #7a1fb8;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111;
+}
+
+/* ================================
+   Grid
+================================ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* mobile */
+@media (max-width: 720px) {
+  .container {
+    width: min(1100px, calc(100% - 20px));
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================
+   Card
+   FIX: SEM transform e SEM overflow hidden
+================================ */
+.card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+
+  /* IMPORTANTÍSSIMO pro modal não ser cortado */
+  overflow: visible;
+
+  /* efeito premium seguro (sem transform) */
+  transition: box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
+}
+
+/* imagem (aqui sim pode cortar, mas só a imagem) */
+.cardImageWrap {
+  width: 100%;
+  height: 140px;
+  background: #eee;
+
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  overflow: hidden;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cardImagePlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #eee, #f4f4f4, #eee);
+}
+
+/* conteúdo */
+.cardBody {
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardName {
+  font-size: 14px;
+  font-weight: 900;
+  color: #111;
+}
+
+.cardDesc {
+  font-size: 11px;
+  color: #7b7b7b;
+  line-height: 1.35;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* preço + botão */
+.cardFooter {
+  margin-top: auto;
+  padding: 10px 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  /* mantém o canto arredondado embaixo */
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+.price {
+  font-size: 16px;
+  font-weight: 900;
+  color: #7a1fb8;
+  white-space: nowrap;
+}
+
+/* ================================
+   CartDrawer wrapper
+================================ */
+.drawerWrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Só o botão gatilho (Adicionar do card), não mexe no modal interno */
+.drawerWrap > :global(button) {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  background: #7a1fb8;
+  color: #fff;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(122, 31, 184, 0.22);
+  line-height: 1;
+  white-space: nowrap;
+
+  position: static !important;
+  width: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
+}
+
+.drawerWrap > :global(button:active) {
+  transform: translateY(1px);
+}
