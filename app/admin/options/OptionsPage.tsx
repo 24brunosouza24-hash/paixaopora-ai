@@ -16,9 +16,9 @@ function brl(cents: number) {
 
 export default function OptionsPage() {
   const [items, setItems] = useState<OptionItem[]>([]);
-  const [type, setType] = useState("frutas");
+  const [type, setType] = useState("adicionais");
   const [name, setName] = useState("");
-  const [priceReais, setPriceReais] = useState<string>("0");
+  const [priceReais, setPriceReais] = useState<string>("0,00");
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string>("");
 
@@ -47,7 +47,7 @@ export default function OptionsPage() {
         body: JSON.stringify({
           type,
           name: name.trim(),
-          priceReais: Number(priceReais || 0),
+          priceReais,
         }),
       });
 
@@ -58,7 +58,7 @@ export default function OptionsPage() {
       }
 
       setName("");
-      setPriceReais("0");
+      setPriceReais("0,00");
       await load();
     } finally {
       setLoading(false);
@@ -121,21 +121,28 @@ export default function OptionsPage() {
 
   return (
     <div style={{ border: "1px solid rgba(255,255,255,.15)", borderRadius: 14, padding: 14 }}>
-      <div style={{ fontWeight: 900, marginBottom: 10 }}>Extras (cremes, frutas, toppings)</div>
+      <div style={{ fontWeight: 900, marginBottom: 10 }}>Adicionais, caldas e extras</div>
 
       <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-        <input
+        <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          placeholder="tipo (ex: cremes, frutas...)"
           style={{
             padding: 10,
             borderRadius: 10,
             border: "1px solid rgba(255,255,255,.2)",
-            background: "transparent",
-            color: "#fff",
+            background: "#fff",
+            color: "#111",
+            fontWeight: 900,
           }}
-        />
+        >
+          <option value="adicionais">Adicionais grátis</option>
+          <option value="caldas">Caldas</option>
+          <option value="cremes">Cremes</option>
+          <option value="frutas">Frutas</option>
+          <option value="toppings">Toppings</option>
+          <option value="extras">Extras pagos</option>
+        </select>
 
         <input
           value={name}
@@ -145,8 +152,9 @@ export default function OptionsPage() {
             padding: 10,
             borderRadius: 10,
             border: "1px solid rgba(255,255,255,.2)",
-            background: "transparent",
-            color: "#fff",
+            background: "#fff",
+            color: "#111",
+            fontWeight: 800,
           }}
         />
 
@@ -159,8 +167,9 @@ export default function OptionsPage() {
             padding: 10,
             borderRadius: 10,
             border: "1px solid rgba(255,255,255,.2)",
-            background: "transparent",
-            color: "#fff",
+            background: "#fff",
+            color: "#111",
+            fontWeight: 800,
           }}
         />
 
@@ -178,7 +187,7 @@ export default function OptionsPage() {
             opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? "Adicionando..." : "Adicionar extra"}
+          {loading ? "Adicionando..." : "Adicionar item"}
         </button>
       </div>
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -10,6 +10,7 @@ type ProductApi = {
   id: string;
   title: string;
   description: string | null;
+  category: string | null;
   kind: string; // ACAI | COPO | SIMPLE
   basePriceCents: number;
   variants: Variant[];
@@ -24,7 +25,7 @@ type CartItem = {
   kind: string;
   variantId: string; // "simple" para SIMPLE
   variantLabel: string; // vazio para SIMPLE
-  basePriceCents: number; // unitário
+  basePriceCents: number; // unitÃ¡rio
   qty: number;
   extras: CartExtra[]; // inclui SABORES do COPO como extras type="sabores"
 };
@@ -40,7 +41,6 @@ type CustomerProfile = {
 
 const CART_KEY = "acai_point_cart_v1";
 const PROFILE_KEY = "acai_point_profile_v1";
-const POINTS_KEY = "acai_point_points_v1";
 
 const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "").trim();
 const DELIVERY_FEE_CENTS = 600;
@@ -93,20 +93,6 @@ function saveProfile(p: CustomerProfile) {
   window.dispatchEvent(new CustomEvent("acai_profile_changed"));
 }
 
-function loadPoints(): number {
-  try {
-    const raw = localStorage.getItem(POINTS_KEY);
-    const n = raw ? Number(raw) : 0;
-    return Number.isFinite(n) ? n : 0;
-  } catch {
-    return 0;
-  }
-}
-function savePoints(n: number) {
-  localStorage.setItem(POINTS_KEY, String(Math.max(0, Math.floor(n))));
-  window.dispatchEvent(new Event("acai_points_updated"));
-}
-
 function calcItemTotal(item: CartItem) {
   const extras = item.extras.reduce((s, e) => s + (e.priceCents || 0), 0);
   const one = (item.basePriceCents || 0) + extras;
@@ -117,18 +103,35 @@ function buildItemKey(productId: string, variantId: string, extraIds: string[]) 
   return `${productId}::${variantId}::${sorted}`;
 }
 
+async function fetchJsonSafe(url: string, init?: RequestInit) {
+  const r = await fetch(url, { cache: "no-store", credentials: "include", ...(init || {}) });
+  const text = await r.text();
+  const j = text ? JSON.parse(text) : null;
+  return { r, j };
+}
+
+function profileIsComplete(p: CustomerProfile | null) {
+  if (!p) return false;
+  if (!p.phone.trim()) return false;
+  if (!p.neighborhood.trim()) return false;
+  if (!p.street.trim()) return false;
+  if (!p.addressLine.trim()) return false;
+  return true;
+}
+
 export default function CartDrawer({
   productId,
   productTitle,
   productKind,
-  productCategory,
+  enableGlobalUi = true,
   optionsByType,
   loadingOptions,
 }: {
   productId: string;
   productTitle: string;
-  productKind?: string; // vindo do MenuClient
-  productCategory?: string; // vindo do MenuClient
+  productKind?: string;
+  productCategory?: string;
+  enableGlobalUi?: boolean;
   optionsByType?: Map<string, OptionItem[]>;
   loadingOptions?: boolean;
 }) {
@@ -137,7 +140,6 @@ export default function CartDrawer({
   const [openCart, setOpenCart] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
 
-  // ===== perfil
   const [pName, setPName] = useState("");
   const [pPhone, setPPhone] = useState("");
   const [pNeighborhood, setPNeighborhood] = useState("");
@@ -147,7 +149,6 @@ export default function CartDrawer({
 
   // ===== carrinho
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [points, setPoints] = useState(0);
 
   // ===== produto carregado
   const [productInfo, setProductInfo] = useState<ProductApi | null>(null);
@@ -167,32 +168,37 @@ export default function CartDrawer({
   const [needChange, setNeedChange] = useState(false);
   const [changeFor, setChangeFor] = useState("");
 
-  // ✅ resgate 100 pts (só no carrinho)
-  const [redeem100, setRedeem100] = useState(false);
+  function syncProfileFromLocal() {
+    const p = loadProfile();
+    if (!p) return false;
 
+    setPName(p.name || "");
+    setPPhone(p.phone || "");
+    setPNeighborhood(p.neighborhood || "");
+    setPStreet(p.street || "");
+    setPAddressLine(p.addressLine || "");
+    setPReference(p.reference || "");
+
+    return true;
+  }
+
+  // init
   useEffect(() => {
-    setPoints(loadPoints());
-    const onPoints = () => setPoints(loadPoints());
-    window.addEventListener("acai_points_updated", onPoints as any);
-    return () => window.removeEventListener("acai_points_updated", onPoints as any);
+    syncProfileFromLocal();
   }, []);
 
   // eventos abrir carrinho / perfil
   useEffect(() => {
-    const onOpenCart = () => {
+    if (!enableGlobalUi) return;
+
+    const onOpenCart = async () => {
       setCart(loadCart());
+      syncProfileFromLocal();
       setOpenCart(true);
     };
-    const onOpenProfile = () => {
-      const p = loadProfile();
-      if (p) {
-        setPName(p.name || "");
-        setPPhone(p.phone || "");
-        setPNeighborhood(p.neighborhood || "");
-        setPStreet(p.street || "");
-        setPAddressLine(p.addressLine || "");
-        setPReference(p.reference || "");
-      }
+
+    const onOpenProfile = async () => {
+      syncProfileFromLocal();
       setOpenProfile(true);
     };
 
@@ -203,45 +209,50 @@ export default function CartDrawer({
       window.removeEventListener("acai_open_cart", onOpenCart as any);
       window.removeEventListener("acai_open_profile", onOpenProfile as any);
     };
-  }, []);
+  }, [enableGlobalUi]);
 
   // atualizar carrinho quando mudar
   useEffect(() => {
+    if (!enableGlobalUi) return;
+
     const onChanged = () => setCart(loadCart());
     window.addEventListener("acai_cart_changed", onChanged as any);
     return () => window.removeEventListener("acai_cart_changed", onChanged as any);
-  }, []);
+  }, [enableGlobalUi]);
 
-  function ensureProfile() {
+  async function ensureProfile() {
+    syncProfileFromLocal();
+
     const p = loadProfile();
-    if (p && p.phone.trim() && p.neighborhood.trim() && p.street.trim() && p.addressLine.trim()) return true;
+    if (profileIsComplete(p)) return true;
 
-    if (p) {
-      setPName(p.name || "");
-      setPPhone(p.phone || "");
-      setPNeighborhood(p.neighborhood || "");
-      setPStreet(p.street || "");
-      setPAddressLine(p.addressLine || "");
-      setPReference(p.reference || "");
-    }
     setOpenProfile(true);
     return false;
   }
 
-  function onSaveProfile() {
+  async function onSaveProfile() {
     const phone = cleanPhoneBR(pPhone);
     if (!phone) return alert("Preencha seu WhatsApp.");
     if (!pNeighborhood.trim()) return alert("Preencha o Bairro.");
     if (!pStreet.trim()) return alert("Preencha a Rua.");
     if (!pAddressLine.trim()) return alert("Preencha o Número / Complemento.");
 
-    saveProfile({
+    const payload = {
       name: pName.trim(),
-      phone,
-      neighborhood: pNeighborhood.trim(),
-      street: pStreet.trim(),
-      addressLine: pAddressLine.trim(),
-      reference: pReference.trim(),
+      whatsapp: phone,
+      bairro: pNeighborhood.trim(),
+      rua: pStreet.trim(),
+      numero: pAddressLine.trim(),
+      referencia: pReference.trim(),
+    };
+
+    saveProfile({
+      name: payload.name,
+      phone: payload.whatsapp,
+      neighborhood: payload.bairro,
+      street: payload.rua,
+      addressLine: payload.numero,
+      reference: payload.referencia,
     });
 
     setOpenProfile(false);
@@ -254,9 +265,7 @@ export default function CartDrawer({
 
   const optionById = useMemo(() => {
     const map = new Map<string, OptionItem>();
-    for (const [, arr] of optionsByTypeFinal) {
-      for (const o of arr) map.set(o.id, o);
-    }
+    for (const [, arr] of optionsByTypeFinal) for (const o of arr) map.set(o.id, o);
     return map;
   }, [optionsByTypeFinal]);
 
@@ -266,14 +275,8 @@ export default function CartDrawer({
 
   // ===== abrir modal produto
   async function openAddProduct() {
-    if (!ensureProfile()) return;
-
-    // ✅ SIMPLE sem tela (adiciona direto)
-    if (String(productKind || "").toUpperCase() === "SIMPLE") {
-      const baseCents = 0; // vai buscar do server pra não errar
-      setOpenProduct(true); // fallback: se preferir 100% sem fetch, mantém modal. Vamos fazer fetch e adicionar direto abaixo.
-    }
-
+    const ok = await ensureProfile();
+    if (!ok) return;
     setOpenProduct(true);
   }
 
@@ -284,47 +287,16 @@ export default function CartDrawer({
     (async () => {
       setVariantsLoading(true);
       setProductInfo(null);
+
       try {
-        const r = await fetch(`/api/products/${encodeURIComponent(productId)}`, { cache: "no-store" });
-        const d = await r.json().catch(() => null);
-
+        const { r, j } = await fetchJsonSafe(`/api/products/${encodeURIComponent(productId)}`);
         if (!r.ok) {
-          console.error("ERRO AO BUSCAR PRODUTO:", r.status, d);
-          setProductInfo(null);
+          console.error("ERRO AO BUSCAR PRODUTO:", r.status, j);
           return;
         }
 
-        const p: ProductApi = d?.product;
+        const p: ProductApi = j?.product;
         setProductInfo(p);
-
-        const k = String(p?.kind || "ACAI").toUpperCase();
-        if (k === "SIMPLE") {
-          // ✅ SIMPLE: adiciona direto, sem tela
-          const current = loadCart();
-          const key = buildItemKey(productId, "simple", []);
-          const idx = current.findIndex((it) => it.key === key);
-
-          if (idx >= 0) current[idx] = { ...current[idx], qty: current[idx].qty + 1 };
-          else {
-            current.push({
-              key,
-              productId,
-              title: productTitle,
-              kind: "SIMPLE",
-              variantId: "simple",
-              variantLabel: "",
-              basePriceCents: p.basePriceCents || 0,
-              qty: 1,
-              extras: [],
-            });
-          }
-
-          saveCart(current);
-          setCart(current);
-          setOpenProduct(false);
-          setOpenCart(true);
-          return;
-        }
 
         setVariantId(p?.variants?.[0]?.id || "");
         setQty(1);
@@ -332,7 +304,6 @@ export default function CartDrawer({
         setSelectedChoiceIds({});
       } catch (e) {
         console.error("ERRO AO BUSCAR PRODUTO:", e);
-        setProductInfo(null);
       } finally {
         setVariantsLoading(false);
       }
@@ -340,6 +311,16 @@ export default function CartDrawer({
   }, [openProduct, productId, productTitle]);
 
   const kind = String(productInfo?.kind || productKind || "ACAI").toUpperCase();
+  const productCategory = normalizeType(productInfo?.category || "");
+  const choicesCount = productInfo?.choices?.length || 0;
+  const choiceLimit =
+    kind === "COPO"
+      ? 1
+      : kind === "ACAI" && productCategory === "sorvete"
+      ? 2
+      : choicesCount > 0
+      ? choicesCount
+      : 0;
 
   const basePrice = useMemo(() => {
     if (!productInfo) return 0;
@@ -356,10 +337,10 @@ export default function CartDrawer({
   }, [kind, optionsByTypeFinal, selected]);
 
   const selectedChoices = useMemo(() => {
-    if (kind !== "COPO") return [];
+    if (choiceLimit === 0) return [];
     const list = productInfo?.choices || [];
     return list.filter((c) => !!selectedChoiceIds[c.id]);
-  }, [kind, productInfo, selectedChoiceIds]);
+  }, [choiceLimit, productInfo, selectedChoiceIds]);
 
   const extrasTotal = useMemo(() => selectedExtras.reduce((sum, o) => sum + (o.priceCents || 0), 0), [selectedExtras]);
   const totalOne = basePrice + extrasTotal;
@@ -369,11 +350,10 @@ export default function CartDrawer({
     const opt = optionById.get(id);
     const t = normalizeType(opt?.type || "");
 
-    // ✅ max 2 caldas
+    // max 2 caldas
     if (t === "caldas") {
       const currentSelectedCaldas = selectedExtras.filter((x) => normalizeType(x.type) === "caldas").length;
       const willSelect = !selected[id];
-
       if (willSelect && currentSelectedCaldas >= 2) {
         alert("Você pode escolher no máximo 2 caldas.");
         return;
@@ -384,19 +364,32 @@ export default function CartDrawer({
   }
 
   function toggleChoice(id: string) {
-    setSelectedChoiceIds((prev) => ({ ...prev, [id]: !prev[id] }));
+    setSelectedChoiceIds((prev) => {
+      if (choiceLimit === 1) return { [id]: true };
+
+      const willSelect = !prev[id];
+      const selectedCount = Object.values(prev).filter(Boolean).length;
+      if (willSelect && choiceLimit > 0 && selectedCount >= choiceLimit) {
+        alert(`Você pode escolher no máximo ${choiceLimit} sabores.`);
+        return prev;
+      }
+
+      return { ...prev, [id]: !prev[id] };
+    });
   }
 
   function addToCartReal() {
     if (!productInfo) return;
 
     const k = String(productInfo.kind || "ACAI").toUpperCase();
-
     if (k !== "SIMPLE" && !variantId) return alert("Selecione um tamanho antes de adicionar.");
 
     const v = k === "SIMPLE" ? null : productInfo.variants.find((x) => x.id === variantId) || null;
 
     const extras: CartExtra[] = [];
+    if (choiceLimit > 0 && selectedChoices.length === 0) {
+      return alert(choiceLimit === 1 ? "Escolha 1 sabor." : "Escolha pelo menos 1 sabor.");
+    }
 
     if (k === "ACAI") {
       for (const e of selectedExtras) {
@@ -409,7 +402,7 @@ export default function CartDrawer({
       }
     }
 
-    if (k === "COPO") {
+    if (choiceLimit > 0) {
       for (const c of selectedChoices) {
         extras.push({
           id: c.id,
@@ -447,7 +440,8 @@ export default function CartDrawer({
     saveCart(current);
     setOpenProduct(false);
     setCart(current);
-    setOpenCart(true);
+    if (enableGlobalUi) setOpenCart(true);
+    else window.dispatchEvent(new Event("acai_open_cart"));
   }
 
   function removeItem(key: string) {
@@ -466,67 +460,17 @@ export default function CartDrawer({
     saveCart(next);
   }
   function clearCart() {
-    setRedeem100(false);
     setCart([]);
     saveCart([]);
   }
 
-  // ===== totals + resgate (só no carrinho)
   const subtotalCents = useMemo(() => cart.reduce((s, it) => s + calcItemTotal(it), 0), [cart]);
-
-  // ✅ regras do resgate:
-  // - pontos >= 100
-  // - carrinho com 1 item
-  // - item ACAI
-  // - 300ml
-  // - qtd 1
-  // - extras permitidos: apenas adicionais + caldas (todos grátis)
-  // - caldas no máximo 2
-  // - não pode ter cremes/frutas/toppings/outros pagos
-  const eligibleRedeem = useMemo(() => {
-    if (points < 100) return false;
-    if (cart.length !== 1) return false;
-
-    const it = cart[0];
-    if ((it.kind || "").toUpperCase() !== "ACAI") return false;
-    if (!/300/i.test(it.variantLabel || "")) return false;
-    if (it.qty !== 1) return false;
-
-    const extras = it.extras || [];
-
-    const caldasCount = extras.filter((e) => normalizeType(e.type) === "caldas").length;
-    if (caldasCount > 2) return false;
-
-    for (const e of extras) {
-      const t = normalizeType(e.type);
-
-      // só permite adicionais e caldas
-      if (t !== "adicionais" && t !== "caldas") return false;
-
-      // tem que ser grátis
-      if ((e.priceCents || 0) > 0) return false;
-    }
-
-    return true;
-  }, [cart, points]);
-
-  useEffect(() => {
-    if (!eligibleRedeem && redeem100) setRedeem100(false);
-  }, [eligibleRedeem, redeem100]);
-
-  const redeemDiscountCents = useMemo(() => {
-    if (!redeem100) return 0;
-    if (!eligibleRedeem) return 0;
-    return subtotalCents; // zera tudo
-  }, [redeem100, eligibleRedeem, subtotalCents]);
-
-  const subtotalAfterRedeem = Math.max(0, subtotalCents - redeemDiscountCents);
+  const subtotalAfterRedeem = subtotalCents;
 
   const deliveryFeeCents = useMemo(() => {
     if (cart.length === 0) return 0;
-    if (redeem100 && eligibleRedeem) return 0; // ✅ resgate sem taxa
     return DELIVERY_FEE_CENTS;
-  }, [cart.length, redeem100, eligibleRedeem]);
+  }, [cart.length]);
 
   const cartTotal = subtotalAfterRedeem + deliveryFeeCents;
 
@@ -534,43 +478,34 @@ export default function CartDrawer({
     const p = loadProfile();
 
     const lines: string[] = [];
-    lines.push(`🛒 *Pedido — Açaí Point*`);
-    if (p?.name?.trim()) lines.push(`👤 Cliente: *${p.name.trim()}*`);
+    lines.push(`*Pedido - Paixão por Açaí e Doces*`);
+    if (p?.name?.trim()) lines.push(`Cliente: *${p.name.trim()}*`);
     lines.push("");
-
-    if (redeem100 && eligibleRedeem) {
-      lines.push(`🎁 *RESGATE:* 100 pontos por *Açaí 300ml grátis*`);
-      lines.push(`✅ Permitido: adicionais grátis + até 2 caldas grátis`);
-      lines.push(`❌ Não permitido: cremes/frutas/toppings/extras pagos`);
-      lines.push("");
-    }
 
     cart.forEach((it, i) => {
       lines.push(`*${i + 1}) ${it.title}*`);
 
       const k = (it.kind || "ACAI").toUpperCase();
-      if (k !== "SIMPLE") lines.push(`• Tamanho: ${it.variantLabel}`);
-      lines.push(`• Qtd: ${it.qty}`);
+      if (k !== "SIMPLE") lines.push(`- Tamanho: ${it.variantLabel}`);
+      lines.push(`- Qtd: ${it.qty}`);
 
       if (it.extras.length) {
         const extrasTxt = it.extras
           .map((e) => `${e.name}${e.priceCents ? ` (+${brl(e.priceCents)})` : ""}`)
           .join(", ");
-        lines.push(`• Itens: ${extrasTxt}`);
+        lines.push(`- Itens: ${extrasTxt}`);
       } else {
-        lines.push(`• Itens: nenhum`);
+        lines.push(`- Itens: nenhum`);
       }
 
-      const itemTotal = calcItemTotal(it);
-      const shown = redeem100 && eligibleRedeem ? 0 : itemTotal;
-      lines.push(`• Subtotal: *${brl(shown)}*`);
+      lines.push(`- Subtotal: *${brl(calcItemTotal(it))}*`);
       lines.push("");
     });
 
-    lines.push(`📦 Subtotal: ${brl(subtotalAfterRedeem)}`);
-    lines.push(`🚚 Taxa de entrega: ${brl(deliveryFeeCents)}`);
+    lines.push(`Subtotal: ${brl(subtotalAfterRedeem)}`);
+    lines.push(`Taxa de entrega: ${brl(deliveryFeeCents)}`);
     lines.push("");
-    lines.push(`💰 *Total: ${brl(cartTotal)}*`);
+    lines.push(`*Total: ${brl(cartTotal)}*`);
     lines.push("");
 
     const payLabel =
@@ -582,62 +517,98 @@ export default function CartDrawer({
         ? "Cartão de Crédito"
         : "Cartão de Débito";
 
-    lines.push(`💳 Pagamento: *${payLabel}*`);
-
+    lines.push(`Pagamento: *${payLabel}*`);
     if (payment === "dinheiro") {
-      lines.push(`🪙 Troco: ${needChange ? `SIM (para ${changeFor || "?"})` : "NÃO"}`);
+      lines.push(`Troco: ${needChange ? `SIM (para ${changeFor || "?"})` : "NÃO"}`);
     }
 
     lines.push("");
-    if (p?.neighborhood?.trim()) lines.push(`🏘️ Bairro: *${p.neighborhood.trim()}*`);
-    if (p?.street?.trim()) lines.push(`📍 Rua: *${p.street.trim()}*`);
-    if (p?.addressLine?.trim()) lines.push(`🏠 Número / Complemento: *${p.addressLine.trim()}*`);
-    if (p?.reference?.trim()) lines.push(`📌 Referência: ${p.reference.trim()}`);
+    if (p?.neighborhood?.trim()) lines.push(`Bairro: *${p.neighborhood.trim()}*`);
+    if (p?.street?.trim()) lines.push(`Rua: *${p.street.trim()}*`);
+    if (p?.addressLine?.trim()) lines.push(`Número / Complemento: *${p.addressLine.trim()}*`);
+    if (p?.reference?.trim()) lines.push(`Referência: ${p.reference.trim()}`);
 
     if (notes.trim()) {
       lines.push("");
-      lines.push(`📝 Obs: ${notes.trim()}`);
+      lines.push(`Obs: ${notes.trim()}`);
     }
-
-    lines.push("");
-
-    const pointsEarned = redeem100 && eligibleRedeem ? 0 : Math.floor(cartTotal / 300);
-    const pointsAfter = Math.max(0, points - (redeem100 && eligibleRedeem ? 100 : 0)) + pointsEarned;
-
-    lines.push(`⭐ Pontos ganhos: *${pointsEarned}*`);
-    lines.push(`⭐ Pontos após pedido: *${pointsAfter}*`);
 
     return lines.join("\n");
   }
 
-  function finalizeWhatsApp() {
-    if (!ensureProfile()) return;
+  function closePendingWhatsAppTab(tab?: Window | null) {
+    try {
+      tab?.close();
+    } catch {}
+  }
 
-    if (cart.length === 0) return alert("Seu carrinho está vazio.");
+  function sendToWhatsApp(url: string, tab?: Window | null) {
+    if (tab && !tab.closed) {
+      tab.location.href = url;
+      return;
+    }
+
+    const opened = window.open(url, "_blank");
+    if (!opened) window.location.href = url;
+  }
+
+  async function finalizeWhatsApp(whatsAppTab?: Window | null) {
+    const ok = await ensureProfile();
+    if (!ok) {
+      closePendingWhatsAppTab(whatsAppTab);
+      return;
+    }
+
+    if (cart.length === 0) {
+      closePendingWhatsAppTab(whatsAppTab);
+      return alert("Seu carrinho está vazio.");
+    }
     if (!WHATSAPP_NUMBER) {
-      alert("Falta configurar o número do WhatsApp no .env.local:\nNEXT_PUBLIC_WHATSAPP_NUMBER=5532998212071");
+      closePendingWhatsAppTab(whatsAppTab);
+      alert("Falta configurar o número do WhatsApp no .env.local:\nNEXT_PUBLIC_WHATSAPP_NUMBER=5532999924483");
       return;
     }
     if (payment === "dinheiro" && needChange && !changeFor.trim()) {
+      closePendingWhatsAppTab(whatsAppTab);
       alert("Informe o valor para troco.");
       return;
     }
+    // ðŸ”¥ SALVAR PEDIDO NO BANCO
+try {
+  const profile = loadProfile();
 
-    if (redeem100 && !eligibleRedeem) {
-      alert(
-        "Para resgatar 100 pontos:\n- Carrinho com 1 Açaí 300ml (qtd 1)\n- Pode adicionais grátis ilimitados\n- Pode no máximo 2 caldas grátis\n- Não pode cremes/frutas/toppings/extras pagos"
-      );
-      return;
-    }
+  await fetch("/api/orders/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+  items: cart,
+  subtotalCents,
+  deliveryFeeCents,
+  totalCents: cartTotal,
+
+  payment,
+  needChange,
+  changeFor,
+
+  notes,
+
+  customerName: profile?.name || "",
+  phone: profile?.phone || "",
+  neighborhood: profile?.neighborhood || "",
+  street: profile?.street || "",
+  addressLine: profile?.addressLine || "",
+  reference: profile?.reference || "",
+}),
+  });
+} catch (e) {
+  console.error("Erro ao salvar pedido:", e);
+}
 
     const msg = formatCheckoutMessage();
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
-
-    const current = loadPoints();
-    const earned = redeem100 && eligibleRedeem ? 0 : Math.floor(cartTotal / 300);
-    const next = Math.max(0, current - (redeem100 && eligibleRedeem ? 100 : 0)) + earned;
-    savePoints(next);
+    sendToWhatsApp(url, whatsAppTab);
 
     clearCart();
     setOpenCart(false);
@@ -647,13 +618,13 @@ export default function CartDrawer({
 
   return (
     <>
-      {/* BOTÃO DO CARD */}
+      {/* BOTÃƒO DO CARD */}
       <button onClick={openAddProduct} type="button">
         Adicionar
       </button>
 
       {/* MODAL PERFIL */}
-      {openProfile ? (
+      {enableGlobalUi && openProfile ? (
         <div
           style={{
             position: "fixed",
@@ -679,7 +650,31 @@ export default function CartDrawer({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontWeight: 900, fontSize: 18, color: "#7a1fa2" }}>Seus dados</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div style={{ fontWeight: 900, fontSize: 18, color: "#7a1fa2" }}>Seus dados</div>
+              <button
+                type="button"
+                aria-label="Fechar dados"
+                title="Fechar"
+                onClick={() => setOpenProfile(false)}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 999,
+                  border: "none",
+                  background: "transparent",
+                  color: "#7a1fa2",
+                  fontWeight: 1000,
+                  fontSize: 28,
+                  cursor: "pointer",
+                  display: "grid",
+                  placeItems: "center",
+                  lineHeight: 1,
+                }}
+              >
+                X
+              </button>
+            </div>
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4, ...textBlack }}>
               Obrigatório para finalizar pedidos e pontuação.
             </div>
@@ -805,23 +800,20 @@ export default function CartDrawer({
           onClick={() => setOpenProduct(false)}
         >
           <div
-  style={{
-    width: 560,
-    maxWidth: "92vw",
-    background: "#fff",
-    borderRadius: 16,
-    padding: 14,
-    boxShadow: "0 20px 60px rgba(0,0,0,.25)",
-    color: "#111",
-
-    // ✅ permite rolar como o carrinho
-    maxHeight: "86vh",
-    overflow: "auto",
-    WebkitOverflowScrolling: "touch",
-  }}
-  onClick={(e) => e.stopPropagation()}
->
-
+            style={{
+              width: 560,
+              maxWidth: "92vw",
+              background: "#fff",
+              borderRadius: 16,
+              padding: 14,
+              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+              color: "#111",
+              maxHeight: "86vh",
+              overflow: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{ fontWeight: 900, fontSize: 18, ...textBlack }}>{productTitle}</div>
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2, ...textBlack }}>
               {kind === "COPO" ? "Escolha tamanho e sabores" : kind === "ACAI" ? "Escolha tamanho e adicionais" : "Escolha quantidade"}
@@ -872,10 +864,17 @@ export default function CartDrawer({
                   </div>
                 ) : null}
 
-                {/* COPO: só sabores */}
-                {kind === "COPO" ? (
+                {/* sabores */}
+                {choiceLimit > 0 ? (
                   <div style={{ marginTop: 12 }}>
-                    <div style={{ fontWeight: 900, marginBottom: 8, ...textBlack }}>Sabores</div>
+                    <div style={{ fontWeight: 900, marginBottom: 8, ...textBlack }}>
+                      Sabores{" "}
+                      {choiceLimit === 1
+                        ? "(escolha 1)"
+                        : kind === "ACAI" && productCategory === "sorvete"
+                        ? "(escolha até 2)"
+                        : "(escolha quantos quiser)"}
+                    </div>
 
                     {productInfo.choices?.length ? (
                       <div style={{ display: "grid", gap: 8 }}>
@@ -895,14 +894,14 @@ export default function CartDrawer({
                           >
                             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                               <input
-                                type="checkbox"
+                                type={choiceLimit === 1 ? "radio" : "checkbox"}
+                                name={`sabores-${productId}`}
                                 checked={!!selectedChoiceIds[c.id]}
                                 onChange={() => toggleChoice(c.id)}
                               />
                               <span style={{ fontWeight: 800, color: "#111" }}>{c.name}</span>
                             </div>
 
-                            <span style={{ fontWeight: 900, color: "#1b8f3a" }}>Grátis</span>
                           </label>
                         ))}
                       </div>
@@ -1022,11 +1021,7 @@ export default function CartDrawer({
                                       }}
                                     >
                                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                                        <input
-                                          type="checkbox"
-                                          checked={!!selected[o.id]}
-                                          onChange={() => toggleExtra(o.id)}
-                                        />
+                                        <input type="checkbox" checked={!!selected[o.id]} onChange={() => toggleExtra(o.id)} />
                                         <span style={{ fontWeight: 800, color: "#111" }}>{o.name}</span>
                                       </div>
 
@@ -1084,7 +1079,7 @@ export default function CartDrawer({
                   </button>
                 </div>
 
-                {/* Botões */}
+                {/* BotÃµes */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
                   <button
                     onClick={() => setOpenProduct(false)}
@@ -1118,7 +1113,7 @@ export default function CartDrawer({
                       cursor: "pointer",
                     }}
                   >
-                    Adicionar • {brl(totalAll)}
+                    Adicionar {brl(totalAll)}
                   </button>
                 </div>
               </>
@@ -1128,7 +1123,7 @@ export default function CartDrawer({
       ) : null}
 
       {/* CARRINHO + CHECKOUT */}
-      {openCart ? (
+      {enableGlobalUi && openCart ? (
         <div
           style={{
             position: "fixed",
@@ -1158,21 +1153,45 @@ export default function CartDrawer({
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <div style={{ fontWeight: 900, fontSize: 18, color: "#111" }}>Carrinho</div>
-              <button
-                type="button"
-                onClick={clearCart}
-                style={{
-                  border: "1px solid rgba(0,0,0,.2)",
-                  background: "#fff",
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  fontWeight: 900,
-                  cursor: "pointer",
-                  color: "#111",
-                }}
-              >
-                Limpar
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  style={{
+                    border: "1px solid rgba(0,0,0,.2)",
+                    background: "#fff",
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    fontWeight: 900,
+                    cursor: "pointer",
+                    color: "#111",
+                  }}
+                >
+                  Limpar
+                </button>
+                <button
+                  type="button"
+                  aria-label="Fechar carrinho"
+                  title="Fechar"
+                  onClick={() => setOpenCart(false)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 999,
+                    border: "none",
+                    background: "transparent",
+                    color: "#7a1fa2",
+                    fontWeight: 1000,
+                    fontSize: 28,
+                    cursor: "pointer",
+                    display: "grid",
+                    placeItems: "center",
+                    lineHeight: 1,
+                  }}
+                >
+                  X
+                </button>
+              </div>
             </div>
 
             {cart.length === 0 ? (
@@ -1206,9 +1225,7 @@ export default function CartDrawer({
                       </div>
 
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: 900, color: "#7a1fa2" }}>
-                          {redeem100 && eligibleRedeem ? brl(0) : brl(calcItemTotal(it))}
-                        </div>
+                        <div style={{ fontWeight: 900, color: "#7a1fa2" }}>{brl(calcItemTotal(it))}</div>
                         <button
                           type="button"
                           onClick={() => removeItem(it.key)}
@@ -1266,29 +1283,6 @@ export default function CartDrawer({
               </div>
             )}
 
-            {/* RESGATE (só aqui) */}
-            <div style={{ marginTop: 12, border: "1px solid rgba(0,0,0,.12)", borderRadius: 12, padding: 12 }}>
-              <div style={{ fontWeight: 900, marginBottom: 6 }}>Pontos: ⭐ {points}</div>
-
-              <label style={{ display: "flex", gap: 8, alignItems: "center", opacity: eligibleRedeem ? 1 : 0.6 }}>
-                <input
-                  type="checkbox"
-                  disabled={!eligibleRedeem}
-                  checked={redeem100}
-                  onChange={(e) => setRedeem100(e.target.checked)}
-                />
-                <span style={{ fontWeight: 800 }}>
-                  Trocar 100 pontos por Açaí 300ml grátis (sem taxa)
-                </span>
-              </label>
-
-              <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
-                Para ativar: carrinho com <b>1</b> Açaí <b>300ml</b> (qtd 1). Pode{" "}
-                <b>adicionais grátis ilimitados</b> e <b>no máximo 2 caldas grátis</b>. Não pode{" "}
-                <b>cremes/frutas/toppings/extras pagos</b>.
-              </div>
-            </div>
-
             {/* checkout */}
             <div style={{ marginTop: 14, borderTop: "1px solid rgba(0,0,0,.08)", paddingTop: 12 }}>
               <div style={{ fontWeight: 900, marginBottom: 8, color: "#111" }}>Finalizar pedido</div>
@@ -1298,83 +1292,37 @@ export default function CartDrawer({
                   value={loadProfile()?.name || ""}
                   readOnly
                   placeholder="Seu nome (opcional)"
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
-
                 <input
                   value={loadProfile()?.neighborhood || ""}
                   readOnly
                   placeholder="Bairro *"
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
-
                 <input
                   value={loadProfile()?.street || ""}
                   readOnly
                   placeholder="Rua *"
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
-
                 <input
                   value={loadProfile()?.addressLine || ""}
                   readOnly
                   placeholder="Número / Complemento *"
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
-
                 <input
                   value={loadProfile()?.reference || ""}
                   readOnly
                   placeholder="Referência (opcional)"
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
 
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new Event("acai_open_profile"))}
-                  style={{
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    padding: 12,
-                    borderRadius: 12,
-                    fontWeight: 900,
-                    cursor: "pointer",
-                  }}
+                  style={{ border: "1px solid rgba(0,0,0,.15)", background: "#fff", padding: 12, borderRadius: 12, fontWeight: 900, cursor: "pointer" }}
                 >
                   Editar dados
                 </button>
@@ -1382,15 +1330,7 @@ export default function CartDrawer({
                 <select
                   value={payment}
                   onChange={(e) => setPayment(e.target.value as any)}
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    background: "#fff",
-                    fontWeight: 900,
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", fontWeight: 900, color: "#111" }}
                 >
                   <option value="pix">PIX</option>
                   <option value="dinheiro">Dinheiro</option>
@@ -1410,14 +1350,7 @@ export default function CartDrawer({
                         value={changeFor}
                         onChange={(e) => setChangeFor(e.target.value)}
                         placeholder="Troco para quanto? Ex: 50,00"
-                        style={{
-                          width: "100%",
-                          padding: 12,
-                          borderRadius: 12,
-                          border: "1px solid rgba(0,0,0,.15)",
-                          background: "#fff",
-                          color: "#111",
-                        }}
+                        style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                       />
                     ) : null}
                   </div>
@@ -1428,15 +1361,7 @@ export default function CartDrawer({
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Observações (opcional)"
                   rows={3}
-                  style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,.15)",
-                    resize: "vertical",
-                    background: "#fff",
-                    color: "#111",
-                  }}
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", resize: "vertical", background: "#fff", color: "#111" }}
                 />
               </div>
 
@@ -1449,16 +1374,11 @@ export default function CartDrawer({
 
                 <button
                   type="button"
-                  onClick={finalizeWhatsApp}
-                  style={{
-                    border: "none",
-                    background: "#7a1fa2",
-                    color: "#fff",
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    fontWeight: 900,
-                    cursor: "pointer",
+                  onClick={() => {
+                    const whatsAppTab = window.open("", "_blank");
+                    finalizeWhatsApp(whatsAppTab);
                   }}
+                  style={{ border: "none", background: "#7a1fa2", color: "#fff", padding: "12px 14px", borderRadius: 12, fontWeight: 900, cursor: "pointer" }}
                 >
                   Enviar no WhatsApp
                 </button>

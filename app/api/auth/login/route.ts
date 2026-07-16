@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     const user = await prisma.user.findUnique({ where: { phone } });
-    if (!user) {
+    if (!user || !user.passHash) {
       return NextResponse.json({ error: "Telefone ou senha inválidos." }, { status: 401 });
     }
 

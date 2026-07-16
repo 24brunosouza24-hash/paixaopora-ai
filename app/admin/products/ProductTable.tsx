@@ -12,6 +12,7 @@ type Product = {
   description: string | null;
   imageUrl: string | null;
   isActive: boolean;
+  categoryTitle?: string | null;
   kind: string; // ACAI | COPO | SIMPLE
   basePriceCents: number;
   variants: Variant[];
@@ -34,8 +35,9 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
   // modal novo produto
   const [open, setOpen] = useState(false);
 
-  const [kind, setKind] = useState<"ACAI" | "COPO" | "SIMPLE">("ACAI");
+  const [kind, setKind] = useState<"ACAI" | "COPO" | "SIMPLE" | "OTHER">("ACAI");
   const [category, setCategory] = useState("acai");
+  const [categoryTitle, setCategoryTitle] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -93,6 +95,7 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
     setTitle("");
     setDescription("");
     setImageUrl("");
+    setCategoryTitle("");
 
     // reset preços
     setP300("12.00");
@@ -111,13 +114,15 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
       const payload: any = {
         kind,
         category: category.trim().toLowerCase(),
+        categoryTitle: category.trim().toLowerCase() === "outros" ? categoryTitle.trim() || title.trim() : null,
         title: title.trim(),
         description: description.trim() || null,
         imageUrl: imageUrl.trim() || null,
         isActive: true,
       };
 
-      if (kind === "SIMPLE") {
+      if (kind === "SIMPLE" || kind === "OTHER") {
+        payload.kind = "SIMPLE";
         payload.basePriceReais = toNumber(basePrice);
       } else if (kind === "COPO") {
         payload.variants = [
@@ -125,10 +130,6 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
           { label: "300ml", priceReais: toNumber(p300copo), sortOrder: 1 },
         ];
 
-        payload.choices = flavors
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
       } else {
         // ACAI
         payload.variants = [
@@ -136,6 +137,13 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
           { label: "500ml", priceReais: toNumber(p500), sortOrder: 1 },
         ];
       }
+
+      const choices = flavors
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (choices.length > 0) payload.choices = choices;
 
       // ✅ rota correta
       const r = await fetch("/api/admin/products", {
@@ -158,7 +166,7 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
   const list = useMemo(() => products.slice(), [products]);
 
   return (
-    <div style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: 14 }}>
+    <div style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: 14, color: "#fff" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontWeight: 900, fontSize: 16 }}>Produtos ({list.length})</div>
 
@@ -166,8 +174,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
           onClick={() => setOpen(true)}
           style={{
             border: "1px solid rgba(255,255,255,.2)",
-            background: "transparent",
-            color: "#fff",
+            background: "#fff",
+                  color: "#111",
             padding: "10px 12px",
             borderRadius: 12,
             fontWeight: 900,
@@ -265,8 +273,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                   disabled={loadingId === p.id}
                   style={{
                     border: "1px solid rgba(255,255,255,.2)",
-                    background: "transparent",
-                    color: "#fff",
+                    background: "#fff",
+                  color: "#111",
                     padding: "10px 12px",
                     borderRadius: 12,
                     fontWeight: 900,
@@ -332,33 +340,60 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
             <div style={{ display: "grid", gap: 10 }}>
               <select
                 value={kind}
-                onChange={(e) => setKind(e.target.value as any)}
+                onChange={(e) => {
+                  const nextKind = e.target.value as "ACAI" | "COPO" | "SIMPLE" | "OTHER";
+                  setKind(nextKind);
+                  if (nextKind === "OTHER") setCategory("outros");
+                }}
                 style={{
                   padding: 10,
                   borderRadius: 10,
                   border: "1px solid rgba(255,255,255,.2)",
-                  background: "transparent",
-                  color: "#fff",
+                  background: "#fff",
+                  color: "#111",
                   fontWeight: 900,
                 }}
               >
-                <option value="ACAI">ACAI (com adicionais/caldas/extras)</option>
-                <option value="COPO">COPO (150/300 + sabores)</option>
-                <option value="SIMPLE">SIMPLE (pudim/doces)</option>
+                <option value="ACAI">Açaí ou sorvete (com tamanhos e adicionais)</option>
+                <option value="COPO">Copo da felicidade (tamanhos + sabores)</option>
+                <option value="SIMPLE">Produto simples (pudim, doce, cookie)</option>
+                <option value="OTHER">Outros produtos (preço único)</option>
               </select>
 
-              <input
+              <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="categoria (acai, copo, pudim, doces)"
                 style={{
                   padding: 10,
                   borderRadius: 10,
                   border: "1px solid rgba(255,255,255,.2)",
-                  background: "transparent",
-                  color: "#fff",
+                  background: "#fff",
+                  color: "#111",
                 }}
-              />
+              >
+                <option value="acai">Açaí</option>
+                <option value="copo da felicidade">Copo da Felicidade</option>
+                <option value="pudim">Pudim</option>
+                <option value="sorvete">Sorvete</option>
+                <option value="cookies">Cookies</option>
+                <option value="doces">Doces</option>
+                <option value="outros">Outros</option>
+              </select>
+
+              {category === "outros" ? (
+                <input
+                  value={categoryTitle}
+                  onChange={(e) => setCategoryTitle(e.target.value)}
+                  placeholder="nome da seção no cardápio (ex: Bolo de Sal)"
+                  style={{
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,.2)",
+                    background: "#fff",
+                    color: "#111",
+                  }}
+                />
+              ) : null}
 
               <input
                 value={title}
@@ -368,8 +403,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                   padding: 10,
                   borderRadius: 10,
                   border: "1px solid rgba(255,255,255,.2)",
-                  background: "transparent",
-                  color: "#fff",
+                  background: "#fff",
+                  color: "#111",
                 }}
               />
 
@@ -381,8 +416,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                   padding: 10,
                   borderRadius: 10,
                   border: "1px solid rgba(255,255,255,.2)",
-                  background: "transparent",
-                  color: "#fff",
+                  background: "#fff",
+                  color: "#111",
                 }}
               />
 
@@ -394,8 +429,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                   padding: 10,
                   borderRadius: 10,
                   border: "1px solid rgba(255,255,255,.2)",
-                  background: "transparent",
-                  color: "#fff",
+                  background: "#fff",
+                  color: "#111",
                 }}
               />
 
@@ -409,8 +444,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                       padding: 10,
                       borderRadius: 10,
                       border: "1px solid rgba(255,255,255,.2)",
-                      background: "transparent",
-                      color: "#fff",
+                      background: "#fff",
+                  color: "#111",
                     }}
                   />
                   <input
@@ -421,15 +456,16 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                       padding: 10,
                       borderRadius: 10,
                       border: "1px solid rgba(255,255,255,.2)",
-                      background: "transparent",
-                      color: "#fff",
+                      background: "#fff",
+                  color: "#111",
                     }}
                   />
                 </div>
               ) : null}
 
-              {kind === "COPO" ? (
+              {kind === "COPO" || (kind === "ACAI" && category === "sorvete") ? (
                 <>
+                  {kind === "COPO" ? (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <input
                       value={p150}
@@ -439,8 +475,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                         padding: 10,
                         borderRadius: 10,
                         border: "1px solid rgba(255,255,255,.2)",
-                        background: "transparent",
-                        color: "#fff",
+                        background: "#fff",
+                  color: "#111",
                       }}
                     />
                     <input
@@ -451,11 +487,12 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                         padding: 10,
                         borderRadius: 10,
                         border: "1px solid rgba(255,255,255,.2)",
-                        background: "transparent",
-                        color: "#fff",
+                        background: "#fff",
+                  color: "#111",
                       }}
                     />
                   </div>
+                  ) : null}
 
                   <input
                     value={flavors}
@@ -465,14 +502,14 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                       padding: 10,
                       borderRadius: 10,
                       border: "1px solid rgba(255,255,255,.2)",
-                      background: "transparent",
-                      color: "#fff",
+                      background: "#fff",
+                  color: "#111",
                     }}
                   />
                 </>
               ) : null}
 
-              {kind === "SIMPLE" ? (
+              {(kind === "SIMPLE" || kind === "OTHER") ? (
                 <input
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
@@ -481,8 +518,23 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                     padding: 10,
                     borderRadius: 10,
                     border: "1px solid rgba(255,255,255,.2)",
-                    background: "transparent",
-                    color: "#fff",
+                    background: "#fff",
+                  color: "#111",
+                  }}
+                />
+              ) : null}
+
+              {!(kind === "COPO" || (kind === "ACAI" && category === "sorvete")) ? (
+                <input
+                  value={flavors}
+                  onChange={(e) => setFlavors(e.target.value)}
+                  placeholder="Sabores/opções do produto (opcional). Separe por vírgula"
+                  style={{
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,.2)",
+                    background: "#fff",
+                    color: "#111",
                   }}
                 />
               ) : null}
@@ -492,8 +544,8 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
                   onClick={() => setOpen(false)}
                   style={{
                     border: "1px solid rgba(255,255,255,.2)",
-                    background: "transparent",
-                    color: "#fff",
+                    background: "#fff",
+                  color: "#111",
                     padding: "10px 12px",
                     borderRadius: 12,
                     fontWeight: 900,

@@ -1,28 +1,49 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
+const COOKIE_NAME = "acai_point_session";
+
+function sha256(input: string) {
+  return crypto.createHash("sha256").update(input).digest("hex");
+}
+
 export async function GET() {
-  const cookieStore = await cookies();
-  const uid = cookieStore.get("uid")?.value;
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(COOKIE_NAME)?.value;
+    if (!token) return NextResponse.json({ ok: false }, { status: 401 });
 
-  if (!uid) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    const tokenHash = sha256(token);
+
+    const session = await prisma.userSession.findFirst({
+      where: { tokenHash, expiresAt: { gt: new Date() } },
+      include: { user: true },
+    });
+
+    if (!session?.user) return NextResponse.json({ ok: false }, { status: 401 });
+
+    const u = session.user;
+
+    return NextResponse.json({
+      ok: true,
+      user: {
+        id: u.id,
+        phone: u.phone,
+        points: u.points,
+
+        name: u.name,
+        neighborhood: u.neighborhood,
+        street: u.street,
+        addressLine: u.addressLine,
+        reference: u.reference,
+      },
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: "Erro no /api/me", detail: String(e?.message || e) },
+      { status: 500 }
+    );
   }
-
-  const user = await prisma.user.findUnique({
-    where: { id: uid },
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      points: true,
-    },
-  });
-
-  if (!user) {
-    return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
-  }
-
-  return NextResponse.json({ ok: true, user });
 }

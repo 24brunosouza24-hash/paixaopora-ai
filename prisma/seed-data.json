@@ -1,0 +1,287 @@
+{
+  "exportedAt": "2026-07-16T17:52:56.562Z",
+  "products": [
+    {
+      "id": "cmolpe8y900091128wkppzyof",
+      "category": "acai",
+      "categoryTitle": null,
+      "title": "Açai",
+      "description": "Açai cremoso e 100% natural que chegar derreter na boca",
+      "imageUrl": "https://images.tcdn.com.br/img/img_prod/1130726/copo_acai_500ml_ppt_550_pacote_com_50_unid_copobras_19352_1_5a8b344293750c9fcf0379651f6b731f.jpg",
+      "isActive": true,
+      "kind": "ACAI",
+      "basePriceCents": 0,
+      "createdAt": "2026-04-30T16:33:51.057Z",
+      "updatedAt": "2026-07-14T16:37:24.902Z",
+      "variants": [
+        {
+          "id": "cmolpe8y9000a1128oppmbu28",
+          "productId": "cmolpe8y900091128wkppzyof",
+          "label": "300ml",
+          "priceCents": 1200,
+          "sortOrder": 0
+        },
+        {
+          "id": "cmolpe8y9000b112855oitbqe",
+          "productId": "cmolpe8y900091128wkppzyof",
+          "label": "500ml",
+          "priceCents": 1600,
+          "sortOrder": 1
+        }
+      ],
+      "choices": []
+    },
+    {
+      "id": "cmolpgnbk000c1128f9wx64x7",
+      "category": "sorvete",
+      "categoryTitle": null,
+      "title": "Sorvete",
+      "description": "Sorvete cremoso, e super gelado",
+      "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgI6eEwa3turw8tm_HSSFPOj75DOljbvHGRQ&s",
+      "isActive": true,
+      "kind": "ACAI",
+      "basePriceCents": 0,
+      "createdAt": "2026-04-30T16:35:42.993Z",
+      "updatedAt": "2026-07-14T16:37:24.483Z",
+      "variants": [
+        {
+          "id": "cmolpgnbk000d1128p5x2a1oc",
+          "productId": "cmolpgnbk000c1128f9wx64x7",
+          "label": "300ml",
+          "priceCents": 1200,
+          "sortOrder": 0
+        },
+        {
+          "id": "cmolpgnbk000e1128bk247oo2",
+          "productId": "cmolpgnbk000c1128f9wx64x7",
+          "label": "500ml",
+          "priceCents": 1600,
+          "sortOrder": 1
+        }
+      ],
+      "choices": [
+        {
+          "id": "cmrkx571l0000c91zp2f6rhvr",
+          "productId": "cmolpgnbk000c1128f9wx64x7",
+          "name": "Chocolate",
+          "isActive": true,
+          "sortOrder": 0
+        },
+        {
+          "id": "cmrkx571l0001c91z9xh0kikx",
+          "productId": "cmolpgnbk000c1128f9wx64x7",
+          "name": "Morango",
+          "isActive": true,
+          "sortOrder": 1
+        },
+        {
+          "id": "cmrkx571l0002c91zurk8apnm",
+          "productId": "cmolpgnbk000c1128f9wx64x7",
+          "name": "Creme",
+          "isActive": true,
+          "sortOrder": 2
+        },
+        {
+          "id": "cmrkx571l0003c91zedg6ayxw",
+          "productId": "cmolpgnbk000c1128f9wx64x7",
+          "name": "Napolitano",
+          "isActive": true,
+          "sortOrder": 3
+        }
+      ]
+    },
+    {
+      "id": "cmolpiixb000f11285umjf58h",
+      "category": "copo da felicidade",
+      "categoryTitle": null,
+      "title": "Copo da Felicidade",
+      "description": "Copo da felicidade, com brigadeiro 100% cremoso e caseiro",
+      "imageUrl": "https://cakeshouse.com.br/wp-content/uploads/2020/06/Copo-da-Felicidade.jpg",
+      "isActive": true,
+      "kind": "COPO",
+      "basePriceCents": 0,
+      "createdAt": "2026-04-30T16:37:10.607Z",
+      "updatedAt": "2026-07-14T16:37:24.000Z",
+      "variants": [
+        {
+          "id": "cmolpiixb000g11284kq754jq",
+          "productId": "cmolpiixb000f11285umjf58h",
+          "label": "150ml",
+          "priceCents": 1500,
+          "sortOrder": 0
+        },
+        {
+          "id": "cmolpiixb000h11284kfgmbie",
+          "productId": "cmolpiixb000f11285umjf58h",
+          "label": "300ml",
+          "priceCents": 2000,
+          "sortOrder": 1
+        }
+      ],
+      "choices": [
+        {
+          "id": "cmolpiixb000i1128bix20gcc",
+          "productId": "cmolpiixb000f11285umjf58h",
+          "name": "Morango",
+          "isActive": true,
+          "sortOrder": 0
+        },
+        {
+          "id": "cmolpiixb000j1128vr9a90mv",
+          "productId": "cmolpiixb000f11285umjf58h",
+          "name": "Coco",
+          "isActive": true,
+          "sortOrder": 1
+        },
+        {
+          "id": "cmolpiixb000k1128v6410m7h",
+          "productId": "cmolpiixb000f11285umjf58h",
+          "name": "Brigadeiro",
+          "isActive": true,
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "cmolpml1l000m1128kgsviyi1",
+      "category": "pudim",
+      "categoryTitle": null,
+      "title": "Pudim",
+      "description": "Pudim de leite condensado super cremoso e 100% lisinho feito com muito amor",
+      "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrWlbuBFJ4xsA-Bmv6rcttTKvVyLw6Qe48uQ&s",
+      "isActive": true,
+      "kind": "SIMPLE",
+      "basePriceCents": 1000,
+      "createdAt": "2026-04-30T16:40:19.978Z",
+      "updatedAt": "2026-07-14T16:37:23.578Z",
+      "variants": [],
+      "choices": []
+    },
+    {
+      "id": "cmrkwgj4b0000n87p54e8ma8y",
+      "category": "outros",
+      "categoryTitle": "bolo de sal",
+      "title": "bolo de sal",
+      "description": "bolo de sal cremoso saborroso com calda de ameixa",
+      "imageUrl": null,
+      "isActive": true,
+      "kind": "SIMPLE",
+      "basePriceCents": 1499,
+      "createdAt": "2026-07-14T17:02:55.691Z",
+      "updatedAt": "2026-07-14T17:07:48.705Z",
+      "variants": [],
+      "choices": []
+    },
+    {
+      "id": "cmrkwws6h00002niukxq2v29e",
+      "category": "outros",
+      "categoryTitle": "Bolo AlBlack",
+      "title": "Bolo AlBlack",
+      "description": "Bolo 100% de chocolate com cacau em po, brigadeiro cremoso",
+      "imageUrl": null,
+      "isActive": true,
+      "kind": "SIMPLE",
+      "basePriceCents": 1699,
+      "createdAt": "2026-07-14T17:15:33.929Z",
+      "updatedAt": "2026-07-14T17:15:33.929Z",
+      "variants": [],
+      "choices": []
+    },
+    {
+      "id": "cmrkx253c00072niu75o2zkgn",
+      "category": "outros",
+      "categoryTitle": "Cup chup",
+      "title": "Chup chup",
+      "description": "cremoso",
+      "imageUrl": null,
+      "isActive": true,
+      "kind": "SIMPLE",
+      "basePriceCents": 1000,
+      "createdAt": "2026-07-14T17:19:43.944Z",
+      "updatedAt": "2026-07-14T17:19:43.944Z",
+      "variants": [],
+      "choices": []
+    }
+  ],
+  "options": [
+    {
+      "id": "cmrkw6op30000ke67twphr129",
+      "type": "adicionais",
+      "name": "amendoin",
+      "priceCents": 0,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw6u570001ke67z3e8xk8k",
+      "type": "adicionais",
+      "name": "leite em po",
+      "priceCents": 0,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw6zl00002ke67j5p968hh",
+      "type": "caldas",
+      "name": "chocolate",
+      "priceCents": 0,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw74xy0003ke67izenoyun",
+      "type": "caldas",
+      "name": "morango",
+      "priceCents": 0,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw776a0004ke67nh15g1o7",
+      "type": "caldas",
+      "name": "uva",
+      "priceCents": 0,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw7s4s0006ke67jrey3z2c",
+      "type": "cremes",
+      "name": "leite ninho",
+      "priceCents": 250,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw7ggf0005ke67bvfiv9mj",
+      "type": "cremes",
+      "name": "nutela",
+      "priceCents": 350,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw8anp0008ke67rx3b1mpv",
+      "type": "frutas",
+      "name": "banana",
+      "priceCents": 100,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "cmrkw830q0007ke67wo5vr3vz",
+      "type": "frutas",
+      "name": "morango",
+      "priceCents": 200,
+      "isActive": true,
+      "sortOrder": 0
+    }
+  ],
+  "storeSettings": [
+    {
+      "id": 1,
+      "isOpen": true,
+      "updatedAt": "2026-07-14T16:25:11.977Z"
+    }
+  ]
+}

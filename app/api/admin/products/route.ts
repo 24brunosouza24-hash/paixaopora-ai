@@ -55,6 +55,7 @@ export async function POST(req: Request) {
 
     const kind = normalizeString(body?.kind || "ACAI").toUpperCase() || "ACAI";
     const category = normalizeString(body?.category || "outros").toLowerCase();
+    const categoryTitle = body?.categoryTitle ? normalizeString(body.categoryTitle) : null;
     const title = normalizeString(body?.title);
     const description = body?.description ? normalizeString(body.description) : null;
     const imageUrl = body?.imageUrl ? normalizeString(body.imageUrl) : null;
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
 
     // ---- choices ----
     const choicesInput: Array<{ name: string; sortOrder: number }> =
-      kind === "COPO" && Array.isArray(body?.choices)
+      Array.isArray(body?.choices)
         ? body.choices
             .map((c: any, idx: number) => {
               if (typeof c === "string") {
@@ -134,6 +135,7 @@ export async function POST(req: Request) {
       data: {
         kind,
         category,
+        categoryTitle,
         title,
         description,
         imageUrl,
@@ -152,7 +154,7 @@ export async function POST(req: Request) {
               },
 
         choices:
-          kind === "COPO" && choicesInput.length
+          choicesInput.length
             ? {
                 create: choicesInput.map((c) => ({
                   name: c.name,

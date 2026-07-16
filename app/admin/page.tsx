@@ -1,11 +1,16 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminCookieName, verifyAdminToken } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
-
+import { CashHistory } from "@/components/admin/CashHistory";
+import { CashSummary } from "@/components/admin/CashSummary";
+import { CashChart } from "@/components/admin/CashChart";
 import ProductTable from "./products/ProductTable";
 import OrdersFeed from "./orders/OrdersFeed";
 import OptionsPage from "./options/OptionsPage";
+import { TopProducts } from "@/components/admin/TopProducts";
+import AdminSections from "@/components/admin/AdminSections";
 
 export default async function AdminPage() {
   const cookieStore = await cookies();
@@ -21,6 +26,9 @@ export default async function AdminPage() {
       variants: {
         orderBy: [{ sortOrder: "asc" }, { priceCents: "asc" }],
       },
+      choices: {
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      },
     },
   });
 
@@ -29,12 +37,27 @@ export default async function AdminPage() {
     (await prisma.storeSettings.create({ data: { id: 1, isOpen: true } }));
 
   return (
-    <div style={{ padding: 16, maxWidth: 1000, margin: "0 auto" }}>
+    <div
+  style={{
+    padding: 16,
+    maxWidth: 1000,
+    margin: "0 auto",
+    background: "#54277b",
+    minHeight: "100vh",
+  }}
+>
+    <AdminSections
+  caixa={<CashSummary />}
+  grafico={<CashChart />}
+  maisVendidos={<TopProducts />}
+  historico={<CashHistory />}
+/>
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Painel Admin</h1>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <a
+          <Link
             href="/"
             style={{
               textDecoration: "none",
@@ -47,9 +70,9 @@ export default async function AdminPage() {
             }}
           >
             Ver cardápio
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/admin/logout"
             style={{
               textDecoration: "none",
@@ -62,7 +85,7 @@ export default async function AdminPage() {
             }}
           >
             Sair
-          </a>
+          </Link>
         </div>
       </div>
 

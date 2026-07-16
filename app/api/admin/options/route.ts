@@ -14,6 +14,15 @@ async function requireAdmin() {
   return null;
 }
 
+function moneyToCents(value: unknown) {
+  const raw = String(value ?? "0").trim();
+  const normalized = raw.includes(",")
+    ? raw.replace(/\./g, "").replace(",", ".")
+    : raw;
+  const amount = Number(normalized || 0);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+}
+
 export async function GET() {
   const guard = await requireAdmin();
   if (guard) return guard;
@@ -32,33 +41,27 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
 
-  const type = String(body.type || "").trim();
+  const type = String(body.type || "").trim().toLowerCase();
   const name = String(body.name || "").trim();
-
-  // ✅ pode vir em REAIS (ex: 2.5) OU em centavos (ex: 250)
-  const priceReaisRaw = body.priceReais;
-  const priceCentsRaw = body.priceCents;
-
-  let priceCents = 0;
-
-  if (priceReaisRaw !== undefined && priceReaisRaw !== null && priceReaisRaw !== "") {
-    const pr = Number(priceReaisRaw);
-    if (!Number.isFinite(pr)) {
-      return NextResponse.json({ error: "Preço (reais) inválido" }, { status: 400 });
-    }
-    priceCents = Math.round(pr * 100);
-  } else {
-    const pc = Number(priceCentsRaw ?? 0);
-    if (!Number.isFinite(pc)) {
-      return NextResponse.json({ error: "Preço (centavos) inválido" }, { status: 400 });
-    }
-    priceCents = Math.round(pc);
-  }
-
   const sortOrder = Math.max(0, Math.round(Number(body.sortOrder || 0)));
 
   if (!type || !name) {
-    return NextResponse.json({ error: "type e name são obrigatórios" }, { status: 400 });
+    return NextResponse.json({ error: "Tipo e nome são obrigatórios" }, { status: 400 });
+  }
+
+  let priceCents = 0;
+  if (body.priceReais !== undefined && body.priceReais !== null && body.priceReais !== "") {
+    const cents = moneyToCents(body.priceReais);
+    if (cents === null) {
+      return NextResponse.json({ error: "Preço inválido. Use 3,50 ou 3.50." }, { status: 400 });
+    }
+    priceCents = cents;
+  } else if (body.priceCents !== undefined && body.priceCents !== null && body.priceCents !== "") {
+    const cents = Number(body.priceCents);
+    if (!Number.isFinite(cents)) {
+      return NextResponse.json({ error: "Preço inválido" }, { status: 400 });
+    }
+    priceCents = Math.round(cents);
   }
 
   const created = await prisma.optionItem.create({
@@ -74,7 +77,6 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, item: created });
 }
 
-// ✅ Toggle ativar/desativar (resolve seu botão "Desativar")
 export async function PATCH(req: Request) {
   const guard = await requireAdmin();
   if (guard) return guard;
@@ -86,7 +88,7 @@ export async function PATCH(req: Request) {
   if (!id) return NextResponse.json({ error: "id é obrigatório" }, { status: 400 });
 
   const found = await prisma.optionItem.findUnique({ where: { id } });
-  if (!found) return NextResponse.json({ error: "Extra não encontrado" }, { status: 404 });
+  if (!found) return NextResponse.json({ error: "Item não encontrado" }, { status: 404 });
 
   const updated = await prisma.optionItem.update({
     where: { id },
@@ -95,7 +97,7 @@ export async function PATCH(req: Request) {
 
   return NextResponse.json({ ok: true, item: updated });
 }
-// 🗑️ EXCLUIR extra (apaga de vez)
+
 export async function DELETE(req: Request) {
   const guard = await requireAdmin();
   if (guard) return guard;
@@ -107,7 +109,7 @@ export async function DELETE(req: Request) {
   if (!id) return NextResponse.json({ error: "id é obrigatório" }, { status: 400 });
 
   const found = await prisma.optionItem.findUnique({ where: { id } });
-  if (!found) return NextResponse.json({ error: "Extra não encontrado" }, { status: 404 });
+  if (!found) return NextResponse.json({ error: "Item não encontrado" }, { status: 404 });
 
   await prisma.optionItem.delete({ where: { id } });
 

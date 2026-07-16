@@ -14,31 +14,37 @@ export default async function Page() {
 
   const byCategory = new Map<string, typeof products>();
   for (const p of products) {
-    const cat = (p.category || "outros").trim().toLowerCase();
+    const baseCat = (p.category || "outros").trim().toLowerCase();
+    const customTitle = (p.categoryTitle || "").trim();
+    const cat = baseCat === "outros" && customTitle ? `outros:${customTitle.toLowerCase()}` : baseCat;
     if (!byCategory.has(cat)) byCategory.set(cat, []);
     byCategory.get(cat)!.push(p);
   }
 
-  const categoryOrder = ["acai", "copo da felicidade", "pudim", "doces", "outros"];
+  const categoryOrder = ["acai", "sorvete", "copo da felicidade", "pudim", "cookies", "doces", "outros"];
 
   const titleByCategory: Record<string, string> = {
     acai: "Açaí",
+    sorvete: "Sorvete",
     "copo da felicidade": "Copo da Felicidade",
     pudim: "Pudim",
+    cookies: "Cookies",
     doces: "Doces",
     outros: "Outros",
   };
 
   const sections = Array.from(byCategory.entries())
     .sort((a, b) => {
-      const ia = categoryOrder.indexOf(a[0]);
-      const ib = categoryOrder.indexOf(b[0]);
+      const ca = a[0].startsWith("outros:") ? "outros" : a[0];
+      const cb = b[0].startsWith("outros:") ? "outros" : b[0];
+      const ia = categoryOrder.indexOf(ca);
+      const ib = categoryOrder.indexOf(cb);
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     })
     .map(([catKey, list]) => {
       return {
         key: catKey,
-        title: titleByCategory[catKey] || catKey,
+        title: list.find((p) => p.categoryTitle)?.categoryTitle || titleByCategory[catKey] || catKey,
         items: list.map((p) => {
           const kind = String(p.kind || "ACAI").toUpperCase();
 

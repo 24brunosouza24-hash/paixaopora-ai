@@ -1,10 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import CartDrawer from "@/app/cart/CartDrawer";
 import styles from "./menu.module.css";
-
-type VariantView = { id: string; label: string; priceCents: number };
 
 type MenuItem = {
   id: string;
@@ -12,10 +10,8 @@ type MenuItem = {
   description: string;
   imageUrl: string;
   minPriceLabel: string;
-
-  // ✅ novos (opcionais pra não quebrar o que já existe)
-  category?: string; // "acai", "copo", "pudim", "doces"...
-  kind?: string; // "ACAI" | "COPO" | "SIMPLE"
+  category?: string;
+  kind?: string;
 };
 
 type Section = {
@@ -31,17 +27,7 @@ type OptionItem = {
   priceCents: number;
 };
 
-const POINTS_KEY = "acai_point_points_v1";
-
-function loadPoints(): number {
-  try {
-    const raw = localStorage.getItem(POINTS_KEY);
-    const n = raw ? Number(raw) : 0;
-    return Number.isFinite(n) ? n : 0;
-  } catch {
-    return 0;
-  }
-}
+const STORE_NAME = "Paix\u00e3o por A\u00e7a\u00ed e Doces";
 
 function normalizeKey(s: string) {
   return (s || "").trim().toLowerCase();
@@ -50,17 +36,7 @@ function normalizeKey(s: string) {
 export default function MenuClient({ sections }: { sections: Section[] }) {
   const [options, setOptions] = useState<OptionItem[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [points, setPoints] = useState(0);
 
-  useEffect(() => {
-    setPoints(loadPoints());
-
-    const onPoints = () => setPoints(loadPoints());
-    window.addEventListener("acai_points_updated", onPoints as any);
-    return () => window.removeEventListener("acai_points_updated", onPoints as any);
-  }, []);
-
-  // carregar extras globais (adicionais/caldas/extras)
   useEffect(() => {
     (async () => {
       try {
@@ -75,16 +51,18 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
 
   const optionsByType = useMemo(() => {
     const map = new Map<string, OptionItem[]>();
+
     for (const it of options) {
       const key = normalizeKey(it.type) || "outros";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(it);
     }
-    for (const [k, arr] of map) {
-      // mantém previsível
+
+    for (const [key, arr] of map) {
       arr.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-      map.set(k, arr);
+      map.set(key, arr);
     }
+
     return map;
   }, [options]);
 
@@ -93,29 +71,11 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
       <div className={styles.container}>
         <div className={styles.topbar}>
           <div className={styles.brand}>
-            <div className={styles.title}>Açaí Point</div>
-            <div className={styles.subtitle}>Seu açaí favorito a um clique</div>
+            <div className={styles.title}>{STORE_NAME}</div>
+            <div className={styles.subtitle}>Açaí, doces e sobremesas a um clique</div>
           </div>
 
           <div className={styles.actions}>
-            <div
-              style={{
-                fontWeight: 900,
-                fontSize: 12,
-                padding: "8px 10px",
-                borderRadius: 999,
-                background: "#fff",
-                border: "1px solid rgba(0,0,0,0.08)",
-                color: "#7a1fa2",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-              title="Pontos"
-            >
-              ⭐ {points}
-            </div>
-
             <button
               className={styles.iconBtn}
               type="button"
@@ -123,7 +83,7 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
               onClick={() => window.dispatchEvent(new Event("acai_open_profile"))}
               title="Meus dados"
             >
-              ⚙️
+              {"\u2699\uFE0F"}
             </button>
 
             <button
@@ -133,12 +93,12 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
               onClick={() => window.dispatchEvent(new Event("acai_open_cart"))}
               title="Carrinho"
             >
-              🛒
+              {"\u{1F6D2}"}
             </button>
           </div>
         </div>
 
-        {sections.map((sec) => (
+        {sections.map((sec, sectionIndex) => (
           <section key={sec.key} className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionBar} />
@@ -146,7 +106,7 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
             </div>
 
             <div className={styles.grid}>
-              {sec.items.map((p) => (
+              {sec.items.map((p, itemIndex) => (
                 <article key={p.id} className={styles.card}>
                   <div className={styles.cardImageWrap}>
                     {p.imageUrl ? (
@@ -169,10 +129,11 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
                       <CartDrawer
                         productId={p.id}
                         productTitle={p.title}
-                        productKind={p.kind}          // ✅ novo
-                        productCategory={p.category}  // ✅ novo
+                        productKind={p.kind}
+                        productCategory={p.category}
                         optionsByType={optionsByType}
                         loadingOptions={loadingOptions}
+                        enableGlobalUi={sectionIndex === 0 && itemIndex === 0}
                       />
                     </div>
                   </div>
@@ -185,3 +146,4 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
     </div>
   );
 }
+

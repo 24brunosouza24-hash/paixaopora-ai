@@ -1,6 +1,5 @@
 /* ================================
    Açaí Point — Menu (estilo app)
-   FIX: modal (CartDrawer) não pode ser afetado por transform/overflow do card
 ================================ */
 
 /* fundo */
@@ -9,7 +8,7 @@
   background: #f6e9f7;
 }
 
-/* largura + menos espaço vazio */
+/* largura */
 .container {
   width: min(1100px, calc(100% - 32px));
   margin: 0 auto;
@@ -19,6 +18,7 @@
 /* ================================
    Topbar
 ================================ */
+
 .topbar {
   display: flex;
   align-items: center;
@@ -55,7 +55,7 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0,0,0,0.08);
   background: #fff;
   display: grid;
   place-items: center;
@@ -72,12 +72,13 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(122, 31, 184, 0.25);
+  box-shadow: 0 10px 24px rgba(122,31,184,0.25);
 }
 
 /* ================================
-   Seções / Categorias
+   Seções
 ================================ */
+
 .section {
   margin-top: 12px;
   padding-bottom: 18px;
@@ -107,17 +108,18 @@
 /* ================================
    Grid
 ================================ */
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-/* mobile */
 @media (max-width: 720px) {
   .container {
     width: min(1100px, calc(100% - 20px));
   }
+
   .grid {
     grid-template-columns: 1fr;
   }
@@ -125,33 +127,29 @@
 
 /* ================================
    Card
-   FIX: SEM transform e SEM overflow hidden
 ================================ */
+
 .card {
   background: #fff;
   border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
-
-  /* IMPORTANTÍSSIMO pro modal não ser cortado */
   overflow: visible;
-
-  /* efeito premium seguro (sem transform) */
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow .15s ease;
 }
 
 .card:hover {
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 14px 28px rgba(0,0,0,.12);
 }
 
-/* imagem (aqui sim pode cortar, mas só a imagem) */
+/* ===== imagem quadrada ===== */
+
 .cardImageWrap {
   width: 100%;
-  height: 140px;
+  aspect-ratio: 1 / 1;
   background: #eee;
-
   border-top-left-radius: 14px;
   border-top-right-radius: 14px;
   overflow: hidden;
@@ -167,10 +165,11 @@
 .cardImagePlaceholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #eee, #f4f4f4, #eee);
+  background: linear-gradient(90deg,#eee,#f4f4f4,#eee);
 }
 
-/* conteúdo */
+/* ===== conteúdo ===== */
+
 .cardBody {
   padding: 12px 12px 10px;
   display: flex;
@@ -195,7 +194,8 @@
   overflow: hidden;
 }
 
-/* preço + botão */
+/* ===== footer ===== */
+
 .cardFooter {
   margin-top: auto;
   padding: 10px 12px 12px;
@@ -204,7 +204,6 @@
   justify-content: space-between;
   gap: 10px;
 
-  /* mantém o canto arredondado embaixo */
   border-bottom-left-radius: 14px;
   border-bottom-right-radius: 14px;
 }
@@ -217,37 +216,89 @@
 }
 
 /* ================================
-   CartDrawer wrapper
+   Botão Adicionar (CartDrawer)
 ================================ */
+
 .drawerWrap {
   display: flex;
   align-items: center;
   justify-content: flex-end;
 }
 
-/* Só o botão gatilho (Adicionar do card), não mexe no modal interno */
+/* força roxo bonito */
 .drawerWrap > :global(button) {
   padding: 8px 14px;
   border-radius: 10px;
   border: none;
-  background: #7a1fb8;
-  color: #fff;
+  background: #7a1fb8 !important;
+  color: #fff !important;
   font-weight: 900;
   font-size: 12px;
   cursor: pointer;
-  box-shadow: 0 10px 18px rgba(122, 31, 184, 0.22);
+  box-shadow: 0 10px 18px rgba(122,31,184,.22);
   line-height: 1;
   white-space: nowrap;
+}
 
-  position: static !important;
-  width: auto !important;
-  left: auto !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: auto !important;
-  z-index: auto !important;
+.drawerWrap > :global(button:hover) {
+  filter: brightness(.95);
 }
 
 .drawerWrap > :global(button:active) {
   transform: translateY(1px);
+}
+/* ✅ força QUALQUER botão dentro do drawerWrap ficar roxo */
+.drawerWrap :global(button) {
+  background: #7a1fb8 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 8px 14px !important;
+  border-radius: 10px !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 18px rgba(122,31,184,.22) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.drawerWrap :global(button:hover) {
+  filter: brightness(.95);
+}
+
+.drawerWrap :global(button:active) {
+  transform: translateY(1px);
+}
+/* ✅ Botão "Adicionar" (mais seguro) */
+.drawerWrap :global(button) {
+  background: #7a1fb8 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 8px 14px !important;
+  border-radius: 10px !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 18px rgba(122, 31, 184, 0.22) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+
+  /* ✅ garante que o texto não some */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 92px !important; /* dá espaço pro "Adicionar" */
+}
+
+.drawerWrap :global(button:hover) {
+  filter: brightness(0.95);
+}
+
+.drawerWrap :global(button:active) {
+  transform: translateY(1px);
+}
+
+/* ✅ se o botão vier vazio, coloca "Adicionar" */
+.drawerWrap :global(button:empty)::before {
+  content: "Adicionar";
 }

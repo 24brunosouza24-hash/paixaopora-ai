@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { CartProvider } from "./cart/cartContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const STORE_NAME = "Paix\u00e3o por A\u00e7a\u00ed e Doces";
 
 export const metadata: Metadata = {
-  title: "Açaí Point",
-  description: "Cardápio digital do Açaí Point",
+  title: STORE_NAME,
+  description: `Cardapio digital do ${STORE_NAME}`,
 };
 
 export default function RootLayout({
@@ -26,13 +17,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {/* Provider do carrinho */}
-        <CartProvider>
-          {children}
-        </CartProvider>
+      <body>
+        <CartProvider>{children}</CartProvider>
       </body>
     </html>
   );

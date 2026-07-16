@@ -10,6 +10,7 @@ datasource db {
 model Product {
   id          String  @id @default(cuid())
   category    String
+  categoryTitle String?
   title       String
   description String?
   imageUrl    String?
@@ -38,6 +39,8 @@ model Variant {
   sortOrder  Int    @default(0)
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model ProductChoice {
@@ -48,6 +51,8 @@ model ProductChoice {
   sortOrder Int     @default(0)
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model OptionItem {
@@ -57,6 +62,9 @@ model OptionItem {
   priceCents Int     @default(0)
   isActive   Boolean @default(true)
   sortOrder  Int     @default(0)
+
+  @@index([type])
+  @@index([isActive])
 }
 
 model StoreSettings {
@@ -65,22 +73,94 @@ model StoreSettings {
   updatedAt DateTime @updatedAt
 }
 
+// User = conta do cliente (WhatsApp)
+// Login por código (OTP) sem senha
 model User {
-  id       String @id @default(cuid())
-  name     String
-  phone    String @unique
-  passHash String
-  points   Int    @default(0)
+  id       String  @id @default(cuid())
+  name     String?
+  phone    String  @unique
+
+  // (legado / opcional) - se em algum momento você quiser senha
+  passHash String?
+
+  // ✅ dados salvos do cliente
+  neighborhood String?
+  street       String?
+  addressLine  String?
+  reference    String?
+
+  points   Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders Order[]
+  orders   Order[]
+  sessions UserSession[]
+
+  // legado: OTP amarrado em userId
+  otps     UserOtp[]
+}
+
+// OTP de login (código temporário) - LEGADO (mantido)
+model UserOtp {
+  id         String   @id @default(cuid())
+
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  // ✅ relação de volta (oposto do User.otps)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([phone])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ✅ NOVO: OTP para envio real via WhatsApp (produção)
+// - não depende de userId (você pode mandar OTP antes de criar o usuário)
+// - tem salt + hash, tentativas, ip, user-agent e expiração
+model OtpToken {
+  id         String   @id @default(cuid())
+  phoneE164  String
+  codeHash   String
+  salt       String
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  userAgent  String?
+
+  @@index([phoneE164, createdAt])
+  @@index([phoneE164, expiresAt])
+  @@index([expiresAt])
+}
+
+// Sessão (cookie httpOnly)
+model UserSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Order {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
+
+status    String   @default("novo")
 
   // liga o pedido ao cliente logado (opcional)
   userId String?
@@ -94,8 +174,10 @@ model Order {
   addressLine  String?
   reference    String?
 
-  payment String?
-  notes   String?
+  payment    String?
+  needChange Boolean @default(false)
+  changeFor  String?
+  notes      String?
 
   subtotalCents    Int @default(0)
   deliveryFeeCents Int @default(0)
@@ -105,6 +187,9 @@ model Order {
   earnedPoints Int @default(0)
 
   items OrderItem[]
+
+  @@index([createdAt])
+  @@index([userId])
 }
 
 model OrderItem {
@@ -117,7 +202,24 @@ model OrderItem {
   variantLabel   String?
   qty            Int
   unitPriceCents Int
-  extrasJson     String? // guarda extras/choices como JSON
+  extrasJson     String?
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+ 
+ model CashClosing {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+
+  totalCents    Int
+  ordersCount   Int
+
+  cashCents     Int
+  pixCents      Int
+  cardCents     Int
+
+  note          String?
 }

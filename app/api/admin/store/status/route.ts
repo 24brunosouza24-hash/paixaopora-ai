@@ -13,9 +13,11 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const nextOpen = !!body?.isOpen;
 
-  const row =
-    (await prisma.storeSettings.findUnique({ where: { id: 1 } })) ||
-    (await prisma.storeSettings.create({ data: { id: 1, isOpen: true } }));
+  await prisma.storeSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, isOpen: true },
+  });
 
   const updated = await prisma.storeSettings.update({
     where: { id: 1 },
