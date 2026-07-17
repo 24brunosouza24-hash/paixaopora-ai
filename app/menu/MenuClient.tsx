@@ -28,15 +28,47 @@ type OptionItem = {
   priceCents: number;
 };
 
+type StoredCartItem = { qty?: number };
+
+const CART_KEY = "acai_point_cart_v1";
+
 const STORE_NAME = "Paix\u00e3o por A\u00e7a\u00ed e Doces";
 
 function normalizeKey(s: string) {
   return (s || "").trim().toLowerCase();
 }
 
+function loadCartQty() {
+  if (typeof window === "undefined") return 0;
+
+  try {
+    const raw = window.localStorage.getItem(CART_KEY);
+    const items = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(items)) return 0;
+
+    return items.reduce((sum: number, item: StoredCartItem) => sum + Number(item.qty || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
 export default function MenuClient({ sections }: { sections: Section[] }) {
   const [options, setOptions] = useState<OptionItem[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [cartQty, setCartQty] = useState(0);
+
+  useEffect(() => {
+    const updateCartQty = () => setCartQty(loadCartQty());
+
+    updateCartQty();
+    window.addEventListener("acai_cart_changed", updateCartQty);
+    window.addEventListener("storage", updateCartQty);
+
+    return () => {
+      window.removeEventListener("acai_cart_changed", updateCartQty);
+      window.removeEventListener("storage", updateCartQty);
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -72,10 +104,10 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
       <div className={styles.container}>
         <div className={styles.topbar}>
           <div className={styles.brand}>
-            <Image className={styles.logo} src="/brand-logo.png" alt="Paixão por Açaí e Doces" width={58} height={58} priority />
+            <Image className={styles.logo} src="/brand-logo.png" alt="Paixão por Açaí e Doces" width={70} height={70} priority />
             <div className={styles.brandText}>
               <div className={styles.title}>{STORE_NAME}</div>
-              <div className={styles.subtitle}>Açaí, doces</div>
+              <div className={styles.subtitle}>Açaí, doces, a um clique</div>
             </div>
           </div>
 
@@ -87,7 +119,8 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
               onClick={() => window.dispatchEvent(new Event("acai_open_cart"))}
               title="Carrinho"
             >
-              {"\u{1F6D2}"}
+              <span className={styles.cartIcon}>{"\u{1F6D2}"}</span>
+              {cartQty > 0 ? <span className={styles.cartBadge}>{cartQty}</span> : null}
             </button>
           </div>
         </div>

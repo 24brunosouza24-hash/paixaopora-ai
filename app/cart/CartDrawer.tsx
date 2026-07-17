@@ -471,8 +471,6 @@ export default function CartDrawer({
     saveCart(current);
     setOpenProduct(false);
     setCart(current);
-    if (enableGlobalUi) setOpenCart(true);
-    else window.dispatchEvent(new Event("acai_open_cart"));
   }
 
   function removeItem(key: string) {
