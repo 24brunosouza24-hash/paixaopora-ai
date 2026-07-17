@@ -139,6 +139,7 @@ export default function CartDrawer({
   const [openProduct, setOpenProduct] = useState(false);
   const [openCart, setOpenCart] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
+  const [resumeCheckoutAfterProfile, setResumeCheckoutAfterProfile] = useState(false);
 
   const [pName, setPName] = useState("");
   const [pPhone, setPPhone] = useState("");
@@ -220,12 +221,18 @@ export default function CartDrawer({
     return () => window.removeEventListener("acai_cart_changed", onChanged as any);
   }, [enableGlobalUi]);
 
-  async function ensureProfile() {
+  function closeProfile() {
+    setResumeCheckoutAfterProfile(false);
+    setOpenProfile(false);
+  }
+
+  async function ensureProfile(options?: { resumeCheckout?: boolean }) {
     syncProfileFromLocal();
 
     const p = loadProfile();
     if (profileIsComplete(p)) return true;
 
+    setResumeCheckoutAfterProfile(Boolean(options?.resumeCheckout));
     setOpenProfile(true);
     return false;
   }
@@ -255,7 +262,14 @@ export default function CartDrawer({
       reference: payload.referencia,
     });
 
+    const shouldResumeCheckout = resumeCheckoutAfterProfile;
+    setResumeCheckoutAfterProfile(false);
     setOpenProfile(false);
+
+    if (shouldResumeCheckout) {
+      const whatsAppTab = window.open("", "_blank");
+      await finalizeWhatsApp(whatsAppTab);
+    }
   }
 
   // ===== fonte final de options
@@ -551,7 +565,7 @@ export default function CartDrawer({
   }
 
   async function finalizeWhatsApp(whatsAppTab?: Window | null) {
-    const ok = await ensureProfile();
+    const ok = await ensureProfile({ resumeCheckout: true });
     if (!ok) {
       closePendingWhatsAppTab(whatsAppTab);
       return;
@@ -634,7 +648,7 @@ try {
             zIndex: 2000,
             padding: 14,
           }}
-          onClick={() => setOpenProfile(false)}
+          onClick={closeProfile}
         >
           <div
             style={{
@@ -654,7 +668,7 @@ try {
                 type="button"
                 aria-label="Fechar dados"
                 title="Fechar"
-                onClick={() => setOpenProfile(false)}
+                onClick={closeProfile}
                 style={{
                   width: 40,
                   height: 40,
@@ -674,7 +688,7 @@ try {
               </button>
             </div>
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4, ...textBlack }}>
-              Obrigatório para finalizar pedidos e pontuação.
+              Obrigatório para finalizar o pedido.
             </div>
 
             <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
