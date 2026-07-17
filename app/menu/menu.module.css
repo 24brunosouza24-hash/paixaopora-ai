@@ -34,13 +34,23 @@
   min-width: 0;
 }
 
-.logo {
-  width: 70px;
-  height: 70px;
+.logoFrame {
+  width: 78px;
+  height: 78px;
   border-radius: 999px;
-  object-fit: cover;
+  overflow: hidden;
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
   filter: drop-shadow(0 10px 20px rgba(122, 31, 184, 0.24));
+}
+
+.logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.22);
+  transform-origin: center;
 }
 
 .brandText {
@@ -346,9 +356,13 @@
 }
 
 @media (max-width: 420px) {
+  .logoFrame {
+    width: 66px;
+    height: 66px;
+  }
+
   .logo {
-    width: 58px;
-    height: 58px;
+    transform: scale(1.24);
   }
 
   .title {
