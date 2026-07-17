@@ -226,11 +226,51 @@ export default function CartDrawer({
     setOpenProfile(false);
   }
 
-  async function ensureProfile(options?: { resumeCheckout?: boolean }) {
-    syncProfileFromLocal();
+  function currentProfileFromFields(): CustomerProfile {
+    return {
+      name: pName.trim(),
+      phone: cleanPhoneBR(pPhone),
+      neighborhood: pNeighborhood.trim(),
+      street: pStreet.trim(),
+      addressLine: pAddressLine.trim(),
+      reference: pReference.trim(),
+    };
+  }
 
-    const p = loadProfile();
-    if (profileIsComplete(p)) return true;
+  function validateAndSaveProfileFromFields() {
+    const profile = currentProfileFromFields();
+
+    if (!profile.phone) {
+      alert("Preencha seu WhatsApp.");
+      return null;
+    }
+    if (!profile.neighborhood) {
+      alert("Preencha o Bairro.");
+      return null;
+    }
+    if (!profile.street) {
+      alert("Preencha a Rua.");
+      return null;
+    }
+    if (!profile.addressLine) {
+      alert("Preencha o Número / Complemento.");
+      return null;
+    }
+
+    saveProfile(profile);
+    return profile;
+  }
+
+  async function ensureProfile(options?: { resumeCheckout?: boolean }) {
+    const typedProfile = currentProfileFromFields();
+    if (profileIsComplete(typedProfile)) {
+      saveProfile(typedProfile);
+      return true;
+    }
+
+    syncProfileFromLocal();
+    const savedProfile = loadProfile();
+    if (profileIsComplete(savedProfile)) return true;
 
     setResumeCheckoutAfterProfile(Boolean(options?.resumeCheckout));
     setOpenProfile(true);
@@ -238,29 +278,8 @@ export default function CartDrawer({
   }
 
   async function onSaveProfile() {
-    const phone = cleanPhoneBR(pPhone);
-    if (!phone) return alert("Preencha seu WhatsApp.");
-    if (!pNeighborhood.trim()) return alert("Preencha o Bairro.");
-    if (!pStreet.trim()) return alert("Preencha a Rua.");
-    if (!pAddressLine.trim()) return alert("Preencha o Número / Complemento.");
-
-    const payload = {
-      name: pName.trim(),
-      whatsapp: phone,
-      bairro: pNeighborhood.trim(),
-      rua: pStreet.trim(),
-      numero: pAddressLine.trim(),
-      referencia: pReference.trim(),
-    };
-
-    saveProfile({
-      name: payload.name,
-      phone: payload.whatsapp,
-      neighborhood: payload.bairro,
-      street: payload.rua,
-      addressLine: payload.numero,
-      reference: payload.referencia,
-    });
+    const savedProfile = validateAndSaveProfileFromFields();
+    if (!savedProfile) return;
 
     const shouldResumeCheckout = resumeCheckoutAfterProfile;
     setResumeCheckoutAfterProfile(false);
@@ -1301,43 +1320,41 @@ try {
 
               <div style={{ display: "grid", gap: 10 }}>
                 <input
-                  value={loadProfile()?.name || ""}
-                  readOnly
+                  value={pName}
+                  onChange={(e) => setPName(e.target.value)}
                   placeholder="Seu nome (opcional)"
                   style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
                 <input
-                  value={loadProfile()?.neighborhood || ""}
-                  readOnly
+                  value={pPhone}
+                  onChange={(e) => setPPhone(e.target.value)}
+                  placeholder="Seu WhatsApp * (DDD + número)"
+                  style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
+                />
+                <input
+                  value={pNeighborhood}
+                  onChange={(e) => setPNeighborhood(e.target.value)}
                   placeholder="Bairro *"
                   style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
                 <input
-                  value={loadProfile()?.street || ""}
-                  readOnly
+                  value={pStreet}
+                  onChange={(e) => setPStreet(e.target.value)}
                   placeholder="Rua *"
                   style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
                 <input
-                  value={loadProfile()?.addressLine || ""}
-                  readOnly
+                  value={pAddressLine}
+                  onChange={(e) => setPAddressLine(e.target.value)}
                   placeholder="Número / Complemento *"
                   style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
                 <input
-                  value={loadProfile()?.reference || ""}
-                  readOnly
+                  value={pReference}
+                  onChange={(e) => setPReference(e.target.value)}
                   placeholder="Referência (opcional)"
                   style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,.15)", background: "#fff", color: "#111" }}
                 />
-
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new Event("acai_open_profile"))}
-                  style={{ border: "1px solid rgba(0,0,0,.15)", background: "#fff", padding: 12, borderRadius: 12, fontWeight: 900, cursor: "pointer" }}
-                >
-                  Editar dados
-                </button>
 
                 <select
                   value={payment}
