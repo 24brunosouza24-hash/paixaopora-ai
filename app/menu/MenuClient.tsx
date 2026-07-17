@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import CartDrawer from "@/app/cart/CartDrawer";
 import styles from "./menu.module.css";
@@ -71,21 +72,14 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
       <div className={styles.container}>
         <div className={styles.topbar}>
           <div className={styles.brand}>
-            <div className={styles.title}>{STORE_NAME}</div>
-            <div className={styles.subtitle}>Açaí, doces e sobremesas a um clique</div>
+            <Image className={styles.logo} src="/brand-logo.png" alt="Paixão por Açaí e Doces" width={58} height={58} priority />
+            <div className={styles.brandText}>
+              <div className={styles.title}>{STORE_NAME}</div>
+              <div className={styles.subtitle}>Açaí, doces</div>
+            </div>
           </div>
 
           <div className={styles.actions}>
-            <button
-              className={styles.iconBtn}
-              type="button"
-              aria-label="Meus dados"
-              onClick={() => window.dispatchEvent(new Event("acai_open_profile"))}
-              title="Meus dados"
-            >
-              {"\u2699\uFE0F"}
-            </button>
-
             <button
               className={styles.cartBtn}
               type="button"

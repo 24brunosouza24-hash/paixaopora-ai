@@ -29,8 +29,25 @@
 
 .brand {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 8px 16px rgba(122, 31, 184, 0.18));
+}
+
+.brandText {
+  display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .title {
@@ -301,4 +318,15 @@
 /* ✅ se o botão vier vazio, coloca "Adicionar" */
 .drawerWrap :global(button:empty)::before {
   content: "Adicionar";
+}
+
+@media (max-width: 420px) {
+  .logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
 }
