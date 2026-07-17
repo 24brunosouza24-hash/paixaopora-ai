@@ -274,9 +274,7 @@ export default function CartDrawer({
   const extrasPaidTypes = ["cremes", "frutas", "toppings", "outros"].filter((t) => optionsByTypeFinal.has(t));
 
   // ===== abrir modal produto
-  async function openAddProduct() {
-    const ok = await ensureProfile();
-    if (!ok) return;
+  function openAddProduct() {
     setOpenProduct(true);
   }
 
