@@ -105,7 +105,7 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
         <div className={styles.topbar}>
           <div className={styles.brand}>
             <span className={styles.logoFrame}>
-              <Image className={styles.logo} src="/brand-logo.png" alt="Paixão por Açaí e Doces" width={92} height={92} priority />
+              <Image className={styles.logo} src="/brand-logo-tight.png" alt="Paixão por Açaí e Doces" width={92} height={92} priority />
             </span>
             <div className={styles.brandText}>
               <div className={styles.title}>{STORE_NAME}</div>

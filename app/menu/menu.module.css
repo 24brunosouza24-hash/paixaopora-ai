@@ -35,8 +35,8 @@
 }
 
 .logoFrame {
-  width: 78px;
-  height: 78px;
+  width: 86px;
+  height: 86px;
   border-radius: 999px;
   overflow: hidden;
   flex: 0 0 auto;
@@ -49,7 +49,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.22);
+  transform: scale(1.06);
   transform-origin: center;
 }
 
@@ -357,12 +357,12 @@
 
 @media (max-width: 420px) {
   .logoFrame {
-    width: 66px;
-    height: 66px;
+    width: 72px;
+    height: 72px;
   }
 
   .logo {
-    transform: scale(1.24);
+    transform: scale(1.08);
   }
 
   .title {
