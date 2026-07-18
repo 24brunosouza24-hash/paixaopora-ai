@@ -203,7 +203,7 @@ export default function CartDrawer({
     addedToastTimer.current = setTimeout(() => {
       setShowAddedToast(false);
       addedToastTimer.current = null;
-    }, 3000);
+    }, 5000);
   }
 
   // eventos abrir carrinho / perfil
