@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type OptionItem = { id: string; type: string; name: string; priceCents: number };
 type Variant = { id: string; label: string; priceCents: number };
@@ -140,9 +140,6 @@ export default function CartDrawer({
   const [openCart, setOpenCart] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   const [resumeCheckoutAfterProfile, setResumeCheckoutAfterProfile] = useState(false);
-  const [showAddedToast, setShowAddedToast] = useState(false);
-  const addedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [pName, setPName] = useState("");
   const [pPhone, setPPhone] = useState("");
   const [pNeighborhood, setPNeighborhood] = useState("");
@@ -189,22 +186,6 @@ export default function CartDrawer({
   useEffect(() => {
     syncProfileFromLocal();
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (addedToastTimer.current) clearTimeout(addedToastTimer.current);
-    };
-  }, []);
-
-  function showProductAddedToast() {
-    if (addedToastTimer.current) clearTimeout(addedToastTimer.current);
-
-    setShowAddedToast(true);
-    addedToastTimer.current = setTimeout(() => {
-      setShowAddedToast(false);
-      addedToastTimer.current = null;
-    }, 5000);
-  }
 
   // eventos abrir carrinho / perfil
   useEffect(() => {
@@ -489,7 +470,6 @@ export default function CartDrawer({
     saveCart(current);
     setOpenProduct(false);
     setCart(current);
-    showProductAddedToast();
   }
 
   function removeItem(key: string) {
@@ -670,30 +650,6 @@ try {
       <button onClick={openAddProduct} type="button">
         Adicionar
       </button>
-
-      {showAddedToast ? (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: "fixed",
-            left: "50%",
-            bottom: 18,
-            transform: "translateX(-50%)",
-            zIndex: 2600,
-            background: "#7a1fa2",
-            color: "#fff",
-            padding: "12px 18px",
-            borderRadius: 999,
-            fontWeight: 900,
-            fontSize: 14,
-            boxShadow: "0 16px 34px rgba(122, 31, 162, 0.35)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Produto adicionado ao carrinho
-        </div>
-      ) : null}
 
       {/* MODAL PERFIL */}
       {enableGlobalUi && openProfile ? (

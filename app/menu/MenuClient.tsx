@@ -28,7 +28,19 @@ type OptionItem = {
   priceCents: number;
 };
 
-type StoredCartItem = { qty?: number };
+type StoredCartExtra = { priceCents?: number };
+type StoredCartItem = {
+  productId?: string;
+  qty?: number;
+  basePriceCents?: number;
+  extras?: StoredCartExtra[];
+};
+
+type CartSummary = {
+  qty: number;
+  subtotalCents: number;
+  productQtyById: Record<string, number>;
+};
 
 const CART_KEY = "acai_point_cart_v1";
 
@@ -38,35 +50,55 @@ function normalizeKey(s: string) {
   return (s || "").trim().toLowerCase();
 }
 
-function loadCartQty() {
-  if (typeof window === "undefined") return 0;
+function loadCartSummary(): CartSummary {
+  const empty = { qty: 0, subtotalCents: 0, productQtyById: {} };
+  if (typeof window === "undefined") return empty;
 
   try {
     const raw = window.localStorage.getItem(CART_KEY);
     const items = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(items)) return 0;
+    if (!Array.isArray(items)) return empty;
 
-    return items.reduce((sum: number, item: StoredCartItem) => sum + Number(item.qty || 0), 0);
+    return items.reduce<CartSummary>((summary, item: StoredCartItem) => {
+      const qty = Number(item.qty || 0);
+      const extrasCents = Array.isArray(item.extras)
+        ? item.extras.reduce((sum, extra) => sum + Number(extra.priceCents || 0), 0)
+        : 0;
+      const unitCents = Number(item.basePriceCents || 0) + extrasCents;
+
+      summary.qty += qty;
+      summary.subtotalCents += unitCents * qty;
+
+      if (item.productId) {
+        summary.productQtyById[item.productId] = (summary.productQtyById[item.productId] || 0) + qty;
+      }
+
+      return summary;
+    }, empty);
   } catch {
-    return 0;
+    return empty;
   }
+}
+
+function brl(cents: number) {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export default function MenuClient({ sections }: { sections: Section[] }) {
   const [options, setOptions] = useState<OptionItem[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [cartQty, setCartQty] = useState(0);
+  const [cartSummary, setCartSummary] = useState<CartSummary>({ qty: 0, subtotalCents: 0, productQtyById: {} });
 
   useEffect(() => {
-    const updateCartQty = () => setCartQty(loadCartQty());
+    const updateCartSummary = () => setCartSummary(loadCartSummary());
 
-    updateCartQty();
-    window.addEventListener("acai_cart_changed", updateCartQty);
-    window.addEventListener("storage", updateCartQty);
+    updateCartSummary();
+    window.addEventListener("acai_cart_changed", updateCartSummary);
+    window.addEventListener("storage", updateCartSummary);
 
     return () => {
-      window.removeEventListener("acai_cart_changed", updateCartQty);
-      window.removeEventListener("storage", updateCartQty);
+      window.removeEventListener("acai_cart_changed", updateCartSummary);
+      window.removeEventListener("storage", updateCartSummary);
     };
   }, []);
 
@@ -112,19 +144,6 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
               <div className={styles.subtitle}>Açaí, doces, a um clique</div>
             </div>
           </div>
-
-          <div className={styles.actions}>
-            <button
-              className={styles.cartBtn}
-              type="button"
-              aria-label="Carrinho"
-              onClick={() => window.dispatchEvent(new Event("acai_open_cart"))}
-              title="Carrinho"
-            >
-              <span className={styles.cartIcon}>{"\u{1F6D2}"}</span>
-              {cartQty > 0 ? <span className={styles.cartBadge}>{cartQty}</span> : null}
-            </button>
-          </div>
         </div>
 
         {sections.map((sec, sectionIndex) => (
@@ -135,16 +154,21 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
             </div>
 
             <div className={styles.grid}>
-              {sec.items.map((p, itemIndex) => (
-                <article key={p.id} className={styles.card}>
-                  <div className={styles.cardImageWrap}>
-                    {p.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className={styles.cardImage} src={p.imageUrl} alt={p.title} />
-                    ) : (
-                      <div className={styles.cardImagePlaceholder} />
-                    )}
-                  </div>
+              {sec.items.map((p, itemIndex) => {
+                const productQty = cartSummary.productQtyById[p.id] || 0;
+
+                return (
+                  <article key={p.id} className={styles.card}>
+                    {productQty > 0 ? <span className={styles.productQtyBadge}>{productQty}</span> : null}
+
+                    <div className={styles.cardImageWrap}>
+                      {p.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className={styles.cardImage} src={p.imageUrl} alt={p.title} />
+                      ) : (
+                        <div className={styles.cardImagePlaceholder} />
+                      )}
+                    </div>
 
                   <div className={styles.cardBody}>
                     <div className={styles.cardName}>{p.title}</div>
@@ -166,13 +190,28 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
                       />
                     </div>
                   </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </section>
         ))}
       </div>
+
+      {cartSummary.qty > 0 ? (
+        <button
+          className={styles.bottomCartBar}
+          type="button"
+          aria-label="Abrir carrinho"
+          onClick={() => window.dispatchEvent(new Event("acai_open_cart"))}
+        >
+          <span className={styles.bottomCartIcon}>{"\u{1F6D2}"}</span>
+          <span className={styles.bottomCartLabel}>Total sem a entrega</span>
+          <span className={styles.bottomCartValue}>
+            {brl(cartSummary.subtotalCents)} / {cartSummary.qty} {cartSummary.qty === 1 ? "item" : "itens"}
+          </span>
+        </button>
+      ) : null}
     </div>
   );
 }
-

@@ -12,7 +12,7 @@
 .container {
   width: min(1100px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 14px 0 32px;
+  padding: 14px 0 108px;
 }
 
 /* ================================
@@ -72,60 +72,6 @@
   color: #7e7e7e;
 }
 
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.iconBtn {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
-.cartBtn {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
-  border: none;
-  background: #7a1fb8;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  box-shadow: 0 12px 28px rgba(122,31,184,0.32);
-}
-
-.cartIcon {
-  font-size: 23px;
-  line-height: 1;
-}
-
-.cartBadge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #fff;
-  color: #7a1fb8;
-  border: 2px solid #7a1fb8;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.14);
-}
 
 /* ================================
    Seções
@@ -182,6 +128,7 @@
 ================================ */
 
 .card {
+  position: relative;
   background: #fff;
   border-radius: 14px;
   border: 1px solid rgba(0,0,0,0.06);
@@ -194,6 +141,26 @@
 
 .card:hover {
   box-shadow: 0 14px 28px rgba(0,0,0,.12);
+}
+
+.productQtyBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #7a1fb8;
+  color: #fff;
+  border: 2px solid #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
 }
 
 /* ===== imagem quadrada ===== */
@@ -367,5 +334,89 @@
 
   .title {
     font-size: 19px;
+  }
+}
+
+/* ================================
+   Carrinho fixo inferior
+================================ */
+
+.bottomCartBar {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  min-height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: #7a1fb8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  box-shadow: 0 16px 34px rgba(122, 31, 184, 0.34);
+  z-index: 2500;
+  cursor: pointer;
+}
+
+.bottomCartIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.bottomCartLabel {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.bottomCartValue {
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+.bottomCartBar:hover {
+  filter: brightness(0.98);
+}
+
+.bottomCartBar:active {
+  transform: translateY(1px);
+}
+
+@media (min-width: 760px) {
+  .bottomCartBar {
+    left: 50%;
+    right: auto;
+    width: min(620px, calc(100% - 32px));
+    transform: translateX(-50%);
+  }
+
+  .bottomCartBar:active {
+    transform: translateX(-50%) translateY(1px);
+  }
+}
+
+@media (max-width: 420px) {
+  .bottomCartBar {
+    min-height: 54px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .bottomCartLabel,
+  .bottomCartValue {
+    font-size: 13px;
   }
 }
