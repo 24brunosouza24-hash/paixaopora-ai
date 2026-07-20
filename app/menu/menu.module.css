@@ -5,7 +5,7 @@
 /* fundo */
 .page {
   min-height: 100vh;
-  background: #f6e9f7;
+  background: #f1ddf4;
 }
 
 /* largura */
@@ -120,6 +120,8 @@
 
   .grid {
     grid-template-columns: 1fr;
+    width: min(100%, 360px);
+    margin: 0 auto;
   }
 }
 
@@ -418,5 +420,24 @@
   .bottomCartLabel,
   .bottomCartValue {
     font-size: 13px;
+  }
+}
+
+@media (max-width: 520px) {
+  .grid {
+    width: calc(100% - 36px);
+  }
+
+  .cardBody {
+    padding: 10px 10px 8px;
+    gap: 4px;
+  }
+
+  .cardFooter {
+    padding: 8px 10px 10px;
+  }
+
+  .section {
+    padding-bottom: 14px;
   }
 }
