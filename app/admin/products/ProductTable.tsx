@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import styles from "../admin.module.css";
 
 type Variant = { id: string; label: string; priceCents: number; sortOrder: number };
 type Choice = { id: string; name: string; sortOrder: number };
@@ -13,7 +14,7 @@ type Product = {
   imageUrl: string | null;
   isActive: boolean;
   categoryTitle?: string | null;
-  kind: string; // ACAI | COPO | SIMPLE
+  kind: string;
   basePriceCents: number;
   variants: Variant[];
   choices?: Choice[];
@@ -23,38 +24,121 @@ function brl(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function centsToReais(cents: number) {
+  return (Number(cents || 0) / 100).toFixed(2).replace(".", ",");
+}
+
 function toNumber(v: string) {
   const n = Number(String(v || "0").replace(",", "."));
   return Number.isFinite(n) ? n : 0;
 }
 
+function splitItems(text: string) {
+  return text
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function variantsToText(variants: Variant[]) {
+  return (variants || [])
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((v) => `${v.label}=${centsToReais(v.priceCents)}`)
+    .join("\n");
+}
+
+function parseVariants(text: string) {
+  return text
+    .split(/\n+/)
+    .map((line, idx) => {
+      const clean = line.trim();
+      if (!clean) return null;
+      const parts = clean.split(/[=:-]/).map((p) => p.trim()).filter(Boolean);
+      if (parts.length < 2) return null;
+      return { label: parts[0], priceReais: toNumber(parts.slice(1).join(".")), sortOrder: idx };
+    })
+    .filter(Boolean);
+}
+
+function productPriceLabel(p: Product) {
+  if (String(p.kind).toUpperCase() === "SIMPLE") return brl(p.basePriceCents || 0);
+  const first = [...(p.variants || [])].sort((a, b) => a.sortOrder - b.sortOrder)[0];
+  return first ? brl(first.priceCents) : "Sem preco";
+}
+
+const categoryOptions = [
+  ["acai", "Acai"],
+  ["sorvete", "Sorvete"],
+  ["copo da felicidade", "Copo da Felicidade"],
+  ["pudim", "Pudim"],
+  ["doces", "Doces"],
+  ["cookies", "Cookies"],
+  ["promocoes", "Promocoes"],
+  ["outros", "Outros"],
+];
+
 export default function ProductTable({ initialProducts }: { initialProducts: Product[] }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [loadingId, setLoadingId] = useState<string>("");
+  const [loadingId, setLoadingId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // modal novo produto
-  const [open, setOpen] = useState(false);
-
-  const [kind, setKind] = useState<"ACAI" | "COPO" | "SIMPLE" | "OTHER">("ACAI");
+  const [kind, setKind] = useState<"ACAI" | "COPO" | "SIMPLE">("ACAI");
   const [category, setCategory] = useState("acai");
   const [categoryTitle, setCategoryTitle] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [basePrice, setBasePrice] = useState("10,00");
+  const [variantLines, setVariantLines] = useState("300ml=12,00\n500ml=16,00");
+  const [flavorsText, setFlavorsText] = useState("");
 
-  // ACAI
-  const [p300, setP300] = useState("12.00");
-  const [p500, setP500] = useState("16.00");
+  const list = useMemo(() => products.slice(), [products]);
+  const activeCount = useMemo(() => products.filter((p) => p.isActive).length, [products]);
 
-  // COPO
-  const [p150, setP150] = useState("15.00");
-  const [p300copo, setP300copo] = useState("20.00");
-  const [flavors, setFlavors] = useState("Morango, Coco, Brigadeiro");
+  function resetForm() {
+    setEditingId(null);
+    setKind("ACAI");
+    setCategory("acai");
+    setCategoryTitle("");
+    setTitle("");
+    setDescription("");
+    setImageUrl("");
+    setBasePrice("10,00");
+    setVariantLines("300ml=12,00\n500ml=16,00");
+    setFlavorsText("");
+  }
 
-  // SIMPLE
-  const [basePrice, setBasePrice] = useState("10.00");
+  function startEdit(p: Product) {
+    const nextKind = String(p.kind || "ACAI").toUpperCase() === "SIMPLE" ? "SIMPLE" : String(p.kind || "ACAI").toUpperCase() === "COPO" ? "COPO" : "ACAI";
+    setEditingId(p.id);
+    setKind(nextKind);
+    setCategory(p.category || "outros");
+    setCategoryTitle(p.categoryTitle || "");
+    setTitle(p.title || "");
+    setDescription(p.description || "");
+    setImageUrl(p.imageUrl || "");
+    setBasePrice(centsToReais(p.basePriceCents || 0));
+    setVariantLines(p.variants?.length ? variantsToText(p.variants) : "300ml=12,00\n500ml=16,00");
+    setFlavorsText((p.choices || []).slice().sort((a, b) => a.sortOrder - b.sortOrder).map((c) => c.name).join(", "));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-  const [saving, setSaving] = useState(false);
+  async function uploadImage(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    setUploading(true);
+    try {
+      const r = await fetch("/api/admin/upload", { method: "POST", body: form });
+      const d = await r.json().catch(() => null);
+      if (!r.ok) return alert(d?.error || "Erro ao enviar foto");
+      setImageUrl(d.url || "");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function toggleProduct(p: Product) {
     setLoadingId(p.id);
@@ -66,514 +150,159 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
       });
       const d = await r.json().catch(() => null);
       if (!r.ok) return alert(d?.error || "Erro ao ativar/desativar");
-
-      setProducts((prev) =>
-        prev.map((x) => (x.id === p.id ? { ...x, isActive: d.product.isActive } : x))
-      );
+      setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, isActive: d.product.isActive } : x)));
     } finally {
       setLoadingId("");
     }
   }
 
   async function deleteProduct(p: Product) {
-    const ok = confirm(`Excluir "${p.title}"?\n\nIsso apaga de vez.`);
-    if (!ok) return;
+    if (!confirm(`Excluir "${p.title}"?
 
+Isso apaga de vez.`)) return;
     setLoadingId(p.id);
     try {
       const r = await fetch(`/api/admin/products/${p.id}`, { method: "DELETE" });
       const d = await r.json().catch(() => null);
       if (!r.ok) return alert(d?.error || "Erro ao excluir");
-
       setProducts((prev) => prev.filter((x) => x.id !== p.id));
     } finally {
       setLoadingId("");
     }
   }
 
-  function resetFormAfterCreate() {
-    setTitle("");
-    setDescription("");
-    setImageUrl("");
-    setCategoryTitle("");
-
-    // reset preços
-    setP300("12.00");
-    setP500("16.00");
-    setP150("15.00");
-    setP300copo("20.00");
-    setFlavors("Morango, Coco, Brigadeiro");
-    setBasePrice("10.00");
-  }
-
-  async function createProduct() {
+  async function saveProduct() {
     if (!title.trim()) return alert("Digite o nome do produto");
+
+    const normalizedKind = kind;
+    const payload: any = {
+      kind: normalizedKind,
+      category: category.trim().toLowerCase(),
+      categoryTitle: category.trim().toLowerCase() === "outros" ? categoryTitle.trim() || title.trim() : null,
+      title: title.trim(),
+      description: description.trim() || null,
+      imageUrl: imageUrl.trim() || null,
+      isActive: true,
+      choices: splitItems(flavorsText),
+    };
+
+    if (normalizedKind === "SIMPLE") {
+      payload.basePriceReais = toNumber(basePrice);
+    } else {
+      const variants = parseVariants(variantLines);
+      if (variants.length === 0) return alert("Informe pelo menos um tamanho/preco. Ex: 300ml=12,00");
+      payload.variants = variants;
+    }
 
     setSaving(true);
     try {
-      const payload: any = {
-        kind,
-        category: category.trim().toLowerCase(),
-        categoryTitle: category.trim().toLowerCase() === "outros" ? categoryTitle.trim() || title.trim() : null,
-        title: title.trim(),
-        description: description.trim() || null,
-        imageUrl: imageUrl.trim() || null,
-        isActive: true,
-      };
-
-      if (kind === "SIMPLE" || kind === "OTHER") {
-        payload.kind = "SIMPLE";
-        payload.basePriceReais = toNumber(basePrice);
-      } else if (kind === "COPO") {
-        payload.variants = [
-          { label: "150ml", priceReais: toNumber(p150), sortOrder: 0 },
-          { label: "300ml", priceReais: toNumber(p300copo), sortOrder: 1 },
-        ];
-
-      } else {
-        // ACAI
-        payload.variants = [
-          { label: "300ml", priceReais: toNumber(p300), sortOrder: 0 },
-          { label: "500ml", priceReais: toNumber(p500), sortOrder: 1 },
-        ];
-      }
-
-      const choices = flavors
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      if (choices.length > 0) payload.choices = choices;
-
-      // ✅ rota correta
-      const r = await fetch("/api/admin/products", {
-        method: "POST",
+      const url = editingId ? `/api/admin/products/${editingId}` : "/api/admin/products";
+      const r = await fetch(url, {
+        method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const d = await r.json().catch(() => null);
-      if (!r.ok) return alert(d?.error || "Erro ao criar");
-
-      setProducts((prev) => [d.product, ...prev]);
-      setOpen(false);
-      resetFormAfterCreate();
+      if (!r.ok) return alert(d?.error || "Erro ao salvar produto");
+      setProducts((prev) => editingId ? prev.map((p) => (p.id === editingId ? d.product : p)) : [d.product, ...prev]);
+      resetForm();
     } finally {
       setSaving(false);
     }
   }
 
-  const list = useMemo(() => products.slice(), [products]);
-
   return (
-    <div style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: 14, color: "#fff" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontWeight: 900, fontSize: 16 }}>Produtos ({list.length})</div>
-
-        <button
-          onClick={() => setOpen(true)}
-          style={{
-            border: "1px solid rgba(255,255,255,.2)",
-            background: "#fff",
-                  color: "#111",
-            padding: "10px 12px",
-            borderRadius: 12,
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
-          + Novo produto
-        </button>
+    <div>
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{products.length}</div>
+          <div className={styles.statLabel}>Produtos</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{activeCount}</div>
+          <div className={styles.statLabel}>Ativos</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{products.length - activeCount}</div>
+          <div className={styles.statLabel}>Desativados</div>
+        </div>
       </div>
 
-      {list.length === 0 ? (
-        <div style={{ opacity: 0.8 }}>Nenhum produto cadastrado ainda.</div>
-      ) : (
-        <div style={{ display: "grid", gap: 10 }}>
-          {list.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                border: "1px solid rgba(255,255,255,.12)",
-                borderRadius: 12,
-                padding: 12,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-                opacity: p.isActive ? 1 : 0.55,
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 900 }}>
-                  {p.title}{" "}
-                  <span style={{ fontSize: 12, opacity: 0.7 }}>
-                    ({p.category}) • {p.kind}
-                  </span>
-                </div>
+      <div className={styles.formCard}>
+        <h2 className={styles.sectionTitle}>{editingId ? "Editar produto" : "Adicionar produto"}</h2>
+        <div className={styles.formGrid}>
+          <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nome do produto (legenda)" />
 
-                <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>
-                  {p.kind === "SIMPLE" ? (
-                    <span
-                      style={{
-                        border: "1px solid rgba(255,255,255,.18)",
-                        padding: "4px 8px",
-                        borderRadius: 999,
-                        fontWeight: 800,
-                      }}
-                    >
-                      Preço: {brl(p.basePriceCents || 0)}
-                    </span>
-                  ) : p.variants?.length ? (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {p.variants
-                        .slice()
-                        .sort((a, b) => a.sortOrder - b.sortOrder)
-                        .map((v) => (
-                          <span
-                            key={v.id}
-                            style={{
-                              border: "1px solid rgba(255,255,255,.18)",
-                              padding: "4px 8px",
-                              borderRadius: 999,
-                              fontWeight: 800,
-                            }}
-                          >
-                            {v.label}: {brl(v.priceCents)}
-                          </span>
-                        ))}
-                    </div>
-                  ) : (
-                    "—"
-                  )}
-                </div>
+          <div className={styles.twoCols}>
+            <select className={styles.select} value={category} onChange={(e) => setCategory(e.target.value)}>
+              {categoryOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <select className={styles.select} value={kind} onChange={(e) => setKind(e.target.value as any)}>
+              <option value="ACAI">Com tamanhos e adicionais</option>
+              <option value="COPO">Copo com tamanhos e sabores</option>
+              <option value="SIMPLE">Produto simples / preco unico</option>
+            </select>
+          </div>
 
-                {p.kind === "COPO" && (p.choices?.length || 0) > 0 ? (
-                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
-                    Sabores:{" "}
-                    {(p.choices || [])
-                      .slice()
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map((c) => c.name)
-                      .join(", ")}
-                  </div>
-                ) : null}
+          {category === "outros" ? (
+            <input className={styles.input} value={categoryTitle} onChange={(e) => setCategoryTitle(e.target.value)} placeholder="Nome da secao no cardapio (ex: Bolo de Sal)" />
+          ) : null}
 
-                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
-                  Status:{" "}
-                  <b style={{ color: p.isActive ? "#9fef00" : "#ff5c5c" }}>
-                    {p.isActive ? "ATIVO" : "INATIVO"}
-                  </b>
-                </div>
+          {kind === "SIMPLE" ? (
+            <input className={styles.input} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="Preco" inputMode="decimal" />
+          ) : (
+            <label>
+              <div className={styles.helperText}>Tamanhos e precos, um por linha. Ex: 300ml=12,00</div>
+              <textarea className={styles.textarea} value={variantLines} onChange={(e) => setVariantLines(e.target.value)} />
+            </label>
+          )}
+
+          <div className={styles.uploadBox}>
+            <span className={styles.uploadLabel}>Foto do produto</span>
+            <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadImage(file); }} />
+            {uploading ? <p className={styles.helperText}>Enviando foto...</p> : null}
+            {imageUrl ? (
+              <div className={styles.previewRow}>
+                <img className={styles.previewImage} src={imageUrl} alt="Previa" />
+                <span className={styles.helperText}>Foto pronta para salvar.</span>
               </div>
+            ) : null}
+          </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={() => toggleProduct(p)}
-                  disabled={loadingId === p.id}
-                  style={{
-                    border: "1px solid rgba(255,255,255,.2)",
-                    background: "#fff",
-                  color: "#111",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    fontWeight: 900,
-                    cursor: "pointer",
-                    opacity: loadingId === p.id ? 0.6 : 1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {loadingId === p.id ? "..." : p.isActive ? "Desativar" : "Ativar"}
-                </button>
+          <label>
+            <b>Sabores / recheios</b>
+            <p className={styles.helperText}>Separe cada sabor por virgula ou coloque um por linha.</p>
+            <textarea className={styles.textarea} value={flavorsText} onChange={(e) => setFlavorsText(e.target.value)} placeholder="Ex.: Morango, Coco, Brigadeiro" />
+          </label>
 
-                <button
-                  onClick={() => deleteProduct(p)}
-                  disabled={loadingId === p.id}
-                  style={{
-                    border: "1px solid rgba(255,255,255,.2)",
-                    background: "rgba(255, 60, 60, .12)",
-                    color: "#fff",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    fontWeight: 900,
-                    cursor: "pointer",
-                    opacity: loadingId === p.id ? 0.6 : 1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Excluir
-                </button>
-              </div>
-            </div>
-          ))}
+          <textarea className={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descricao" />
+
+          <button type="button" onClick={saveProduct} disabled={saving || uploading} className={styles.primaryButton}>
+            {saving ? "Salvando..." : editingId ? "Salvar edicao" : "Salvar produto"}
+          </button>
+          {editingId ? <button type="button" onClick={resetForm} className={styles.ghostButton}>Cancelar edicao</button> : null}
         </div>
-      )}
+      </div>
 
-      {/* MODAL NOVO PRODUTO */}
-      {open ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 60,
-            padding: 16,
-          }}
-          onClick={() => setOpen(false)}
-        >
-          <div
-            style={{
-              width: 560,
-              maxWidth: "95vw",
-              background: "#111",
-              border: "1px solid rgba(255,255,255,.15)",
-              borderRadius: 16,
-              padding: 14,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 10 }}>Novo produto</div>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <select
-                value={kind}
-                onChange={(e) => {
-                  const nextKind = e.target.value as "ACAI" | "COPO" | "SIMPLE" | "OTHER";
-                  setKind(nextKind);
-                  if (nextKind === "OTHER") setCategory("outros");
-                }}
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,.2)",
-                  background: "#fff",
-                  color: "#111",
-                  fontWeight: 900,
-                }}
-              >
-                <option value="ACAI">Açaí ou sorvete (com tamanhos e adicionais)</option>
-                <option value="COPO">Copo da felicidade (tamanhos + sabores)</option>
-                <option value="SIMPLE">Produto simples (pudim, doce, cookie)</option>
-                <option value="OTHER">Outros produtos (preço único)</option>
-              </select>
-
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,.2)",
-                  background: "#fff",
-                  color: "#111",
-                }}
-              >
-                <option value="acai">Açaí</option>
-                <option value="copo da felicidade">Copo da Felicidade</option>
-                <option value="pudim">Pudim</option>
-                <option value="sorvete">Sorvete</option>
-                <option value="cookies">Cookies</option>
-                <option value="doces">Doces</option>
-                <option value="outros">Outros</option>
-              </select>
-
-              {category === "outros" ? (
-                <input
-                  value={categoryTitle}
-                  onChange={(e) => setCategoryTitle(e.target.value)}
-                  placeholder="nome da seção no cardápio (ex: Bolo de Sal)"
-                  style={{
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,.2)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
-                />
-              ) : null}
-
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="nome do produto"
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,.2)",
-                  background: "#fff",
-                  color: "#111",
-                }}
-              />
-
-              <input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="descrição (opcional)"
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,.2)",
-                  background: "#fff",
-                  color: "#111",
-                }}
-              />
-
-              <input
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="url da imagem (opcional)"
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,.2)",
-                  background: "#fff",
-                  color: "#111",
-                }}
-              />
-
-              {kind === "ACAI" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <input
-                    value={p300}
-                    onChange={(e) => setP300(e.target.value)}
-                    placeholder="Preço 300ml (ex 12.00)"
-                    style={{
-                      padding: 10,
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,.2)",
-                      background: "#fff",
-                  color: "#111",
-                    }}
-                  />
-                  <input
-                    value={p500}
-                    onChange={(e) => setP500(e.target.value)}
-                    placeholder="Preço 500ml (ex 16.00)"
-                    style={{
-                      padding: 10,
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,.2)",
-                      background: "#fff",
-                  color: "#111",
-                    }}
-                  />
-                </div>
-              ) : null}
-
-              {kind === "COPO" || (kind === "ACAI" && category === "sorvete") ? (
-                <>
-                  {kind === "COPO" ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <input
-                      value={p150}
-                      onChange={(e) => setP150(e.target.value)}
-                      placeholder="Preço 150ml (ex 15.00)"
-                      style={{
-                        padding: 10,
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,.2)",
-                        background: "#fff",
-                  color: "#111",
-                      }}
-                    />
-                    <input
-                      value={p300copo}
-                      onChange={(e) => setP300copo(e.target.value)}
-                      placeholder="Preço 300ml (ex 20.00)"
-                      style={{
-                        padding: 10,
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,.2)",
-                        background: "#fff",
-                  color: "#111",
-                      }}
-                    />
-                  </div>
-                  ) : null}
-
-                  <input
-                    value={flavors}
-                    onChange={(e) => setFlavors(e.target.value)}
-                    placeholder="Sabores (separe por vírgula) Ex: Morango, Coco, Brigadeiro"
-                    style={{
-                      padding: 10,
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,.2)",
-                      background: "#fff",
-                  color: "#111",
-                    }}
-                  />
-                </>
-              ) : null}
-
-              {(kind === "SIMPLE" || kind === "OTHER") ? (
-                <input
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder="Preço (ex 10.00)"
-                  style={{
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,.2)",
-                    background: "#fff",
-                  color: "#111",
-                  }}
-                />
-              ) : null}
-
-              {!(kind === "COPO" || (kind === "ACAI" && category === "sorvete")) ? (
-                <input
-                  value={flavors}
-                  onChange={(e) => setFlavors(e.target.value)}
-                  placeholder="Sabores/opções do produto (opcional). Separe por vírgula"
-                  style={{
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,.2)",
-                    background: "#fff",
-                    color: "#111",
-                  }}
-                />
-              ) : null}
-
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button
-                  onClick={() => setOpen(false)}
-                  style={{
-                    border: "1px solid rgba(255,255,255,.2)",
-                    background: "#fff",
-                  color: "#111",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    fontWeight: 900,
-                  }}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  onClick={createProduct}
-                  disabled={saving}
-                  style={{
-                    border: "none",
-                    background: "#7a1fa2",
-                    color: "#fff",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    fontWeight: 900,
-                    opacity: saving ? 0.6 : 1,
-                  }}
-                >
-                  {saving ? "Salvando..." : "Salvar"}
-                </button>
-              </div>
+      <div className={styles.productList}>
+        {list.length === 0 ? <p className={styles.helperText}>Nenhum produto cadastrado ainda.</p> : null}
+        {list.map((p) => (
+          <div key={p.id} className={`${styles.productRow} ${!p.isActive ? styles.productRowInactive : ""}`}>
+            {p.imageUrl ? <img className={styles.productThumb} src={p.imageUrl} alt={p.title} /> : <div className={styles.productThumb} />}
+            <div>
+              <div className={styles.productName}>{p.title}</div>
+              <div className={styles.productMeta}>{p.categoryTitle || p.category} ? {productPriceLabel(p)} {p.isActive ? "" : "? inativo"}</div>
+            </div>
+            <div className={styles.rowActions}>
+              <button type="button" onClick={() => toggleProduct(p)} disabled={loadingId === p.id} className={styles.ghostButton}>
+                {loadingId === p.id ? "..." : p.isActive ? "Desativar" : "Ativar"}
+              </button>
+              <button type="button" onClick={() => startEdit(p)} className={styles.ghostButton}>Editar</button>
+              <button type="button" onClick={() => deleteProduct(p)} disabled={loadingId === p.id} className={styles.deleteButton}>Excluir</button>
             </div>
           </div>
-        </div>
-      ) : null}
+        ))}
+      </div>
     </div>
   );
 }

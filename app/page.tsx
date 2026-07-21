@@ -12,6 +12,10 @@ export default async function Page() {
     },
   });
 
+  const settings =
+    (await prisma.storeSettings.findUnique({ where: { id: 1 } })) ??
+    (await prisma.storeSettings.create({ data: { id: 1, isOpen: true } }));
+
   const byCategory = new Map<string, typeof products>();
   for (const p of products) {
     const baseCat = (p.category || "outros").trim().toLowerCase();
@@ -72,5 +76,14 @@ export default async function Page() {
       };
     });
 
-  return <MenuClient sections={sections} />;
+  return (
+    <MenuClient
+      sections={sections}
+      storeStatus={{
+        isOpen: settings.isOpen,
+        openHours: settings.openHours || "18h as 23h30",
+        promotionText: settings.promotionText || "",
+      }}
+    />
+  );
 }

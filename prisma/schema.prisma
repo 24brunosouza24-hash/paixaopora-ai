@@ -68,9 +68,11 @@ model OptionItem {
 }
 
 model StoreSettings {
-  id        Int      @id @default(1) // singleton
-  isOpen    Boolean  @default(true)
-  updatedAt DateTime @updatedAt
+  id            Int      @id @default(1) // singleton
+  isOpen        Boolean  @default(true)
+  openHours     String   @default("18h as 23h30")
+  promotionText String?
+  updatedAt     DateTime @updatedAt
 }
 
 // User = conta do cliente (WhatsApp)

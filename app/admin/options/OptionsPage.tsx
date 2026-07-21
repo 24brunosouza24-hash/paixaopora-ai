@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import styles from "../admin.module.css";
 
 type OptionItem = {
   id: string;
@@ -14,21 +15,27 @@ function brl(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+const typeLabels: Record<string, string> = {
+  adicionais: "Adicionais gratis",
+  caldas: "Caldas",
+  cremes: "Cremes",
+  frutas: "Frutas",
+  toppings: "Toppings",
+  extras: "Extras pagos",
+};
+
 export default function OptionsPage() {
   const [items, setItems] = useState<OptionItem[]>([]);
   const [type, setType] = useState("adicionais");
   const [name, setName] = useState("");
-  const [priceReais, setPriceReais] = useState<string>("0,00");
+  const [priceReais, setPriceReais] = useState("0,00");
   const [loading, setLoading] = useState(false);
-  const [busyId, setBusyId] = useState<string>("");
+  const [busyId, setBusyId] = useState("");
 
   async function load() {
     const r = await fetch("/api/admin/options", { cache: "no-store" });
     const d = await r.json().catch(() => null);
-    if (!r.ok) {
-      alert(d?.error || "Erro ao carregar extras");
-      return;
-    }
+    if (!r.ok) return alert(d?.error || "Erro ao carregar extras");
     setItems(d.items || []);
   }
 
@@ -37,26 +44,16 @@ export default function OptionsPage() {
   }, []);
 
   async function add() {
-    if (!name.trim()) return alert("Digite o nome do extra");
-
+    if (!name.trim()) return alert("Digite o nome do item");
     setLoading(true);
     try {
       const r = await fetch("/api/admin/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          name: name.trim(),
-          priceReais,
-        }),
+        body: JSON.stringify({ type, name: name.trim(), priceReais }),
       });
-
       const d = await r.json().catch(() => null);
-      if (!r.ok) {
-        alert(d?.error || "Erro ao adicionar");
-        return;
-      }
-
+      if (!r.ok) return alert(d?.error || "Erro ao adicionar");
       setName("");
       setPriceReais("0,00");
       await load();
@@ -73,25 +70,18 @@ export default function OptionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-
       const d = await r.json().catch(() => null);
-      if (!r.ok) {
-        alert(d?.error || "Erro ao desativar/ativar");
-        return;
-      }
-
-      setItems((prev) =>
-        prev.map((x) => (x.id === id ? { ...x, isActive: d.item.isActive } : x))
-      );
+      if (!r.ok) return alert(d?.error || "Erro ao ativar/desativar");
+      setItems((prev) => prev.map((x) => (x.id === id ? { ...x, isActive: d.item.isActive } : x)));
     } finally {
       setBusyId("");
     }
   }
 
   async function remove(id: string, label: string) {
-    const ok = confirm(`Excluir "${label}"?\n\nIsso apaga de vez.`);
-    if (!ok) return;
+    if (!confirm(`Excluir "${label}"?
 
+Isso apaga de vez.`)) return;
     setBusyId(id);
     try {
       const r = await fetch("/api/admin/options", {
@@ -99,13 +89,8 @@ export default function OptionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-
       const d = await r.json().catch(() => null);
-      if (!r.ok) {
-        alert(d?.error || "Erro ao excluir");
-        return;
-      }
-
+      if (!r.ok) return alert(d?.error || "Erro ao excluir");
       setItems((prev) => prev.filter((x) => x.id !== id));
     } finally {
       setBusyId("");
@@ -120,147 +105,48 @@ export default function OptionsPage() {
   }, {});
 
   return (
-    <div style={{ border: "1px solid rgba(255,255,255,.15)", borderRadius: 14, padding: 14 }}>
-      <div style={{ fontWeight: 900, marginBottom: 10 }}>Adicionais, caldas e extras</div>
-
-      <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          style={{
-            padding: 10,
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,.2)",
-            background: "#fff",
-            color: "#111",
-            fontWeight: 900,
-          }}
-        >
-          <option value="adicionais">Adicionais grátis</option>
-          <option value="caldas">Caldas</option>
-          <option value="cremes">Cremes</option>
-          <option value="frutas">Frutas</option>
-          <option value="toppings">Toppings</option>
-          <option value="extras">Extras pagos</option>
-        </select>
-
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="nome (ex: Leite Ninho)"
-          style={{
-            padding: 10,
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,.2)",
-            background: "#fff",
-            color: "#111",
-            fontWeight: 800,
-          }}
-        />
-
-        <input
-          value={priceReais}
-          onChange={(e) => setPriceReais(e.target.value)}
-          placeholder="preço em reais (ex: 2.50)"
-          inputMode="decimal"
-          style={{
-            padding: 10,
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,.2)",
-            background: "#fff",
-            color: "#111",
-            fontWeight: 800,
-          }}
-        />
-
-        <button
-          onClick={add}
-          disabled={loading}
-          style={{
-            padding: 12,
-            borderRadius: 12,
-            border: "none",
-            background: "#7a1fa2",
-            color: "#fff",
-            fontWeight: 900,
-            cursor: "pointer",
-            opacity: loading ? 0.6 : 1,
-          }}
-        >
+    <div className={styles.formCard}>
+      <h2 className={styles.sectionTitle}>Cremes, frutas, caldas e adicionais</h2>
+      <div className={styles.formGrid}>
+        <div className={styles.twoCols}>
+          <select className={styles.select} value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="adicionais">Adicionais gratis</option>
+            <option value="caldas">Caldas</option>
+            <option value="cremes">Cremes</option>
+            <option value="frutas">Frutas</option>
+            <option value="toppings">Toppings</option>
+            <option value="extras">Extras pagos</option>
+          </select>
+          <input className={styles.input} value={priceReais} onChange={(e) => setPriceReais(e.target.value)} placeholder="Preco. Ex: 3,50" inputMode="decimal" />
+        </div>
+        <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome. Ex: Leite Ninho" />
+        <button type="button" onClick={add} disabled={loading} className={styles.primaryButton}>
           {loading ? "Adicionando..." : "Adicionar item"}
         </button>
       </div>
 
-      {Object.keys(grouped).length === 0 ? (
-        <div style={{ opacity: 0.8 }}>Nenhum extra cadastrado ainda.</div>
-      ) : (
-        Object.entries(grouped).map(([t, list]) => (
-          <div key={t} style={{ marginTop: 10 }}>
-            <div style={{ fontWeight: 900, marginBottom: 8 }}>{t}</div>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              {list.map((it) => (
-                <div
-                  key={it.id}
-                  style={{
-                    border: "1px solid rgba(255,255,255,.15)",
-                    borderRadius: 12,
-                    padding: 12,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    alignItems: "center",
-                    opacity: it.isActive ? 1 : 0.55,
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 800 }}>{it.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.85 }}>
-                      {it.priceCents > 0 ? brl(it.priceCents) : "Grátis"}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button
-                      onClick={() => toggle(it.id)}
-                      disabled={busyId === it.id}
-                      style={{
-                        border: "1px solid rgba(255,255,255,.2)",
-                        background: "transparent",
-                        color: "#fff",
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        fontWeight: 900,
-                        cursor: "pointer",
-                        opacity: busyId === it.id ? 0.6 : 1,
-                      }}
-                    >
-                      {it.isActive ? "Desativar" : "Ativar"}
-                    </button>
-
-                    <button
-                      onClick={() => remove(it.id, it.name)}
-                      disabled={busyId === it.id}
-                      style={{
-                        border: "1px solid rgba(255,255,255,.2)",
-                        background: "rgba(255, 60, 60, .12)",
-                        color: "#fff",
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        fontWeight: 900,
-                        cursor: "pointer",
-                        opacity: busyId === it.id ? 0.6 : 1,
-                      }}
-                    >
-                      Excluir
-                    </button>
-                  </div>
+      <div className={styles.optionGroups}>
+        {Object.keys(grouped).length === 0 ? <p className={styles.helperText}>Nenhum item cadastrado ainda.</p> : null}
+        {Object.entries(grouped).map(([t, list]) => (
+          <div key={t}>
+            <h3 className={styles.sectionTitle} style={{ fontSize: 16 }}>{typeLabels[t] || t}</h3>
+            {list.map((it) => (
+              <div key={it.id} className={styles.optionItem} style={{ opacity: it.isActive ? 1 : .55 }}>
+                <div>
+                  <b>{it.name}</b>
+                  <div className={styles.helperText}>{it.priceCents > 0 ? brl(it.priceCents) : "Gratis"}</div>
                 </div>
-              ))}
-            </div>
+                <div className={styles.rowActions}>
+                  <button type="button" onClick={() => toggle(it.id)} disabled={busyId === it.id} className={styles.ghostButton}>
+                    {it.isActive ? "Desativar" : "Ativar"}
+                  </button>
+                  <button type="button" onClick={() => remove(it.id, it.name)} disabled={busyId === it.id} className={styles.deleteButton}>Excluir</button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))
-      )}
+        ))}
+      </div>
     </div>
   );
 }

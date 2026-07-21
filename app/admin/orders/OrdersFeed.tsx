@@ -453,7 +453,7 @@ ${order.notes ? `Obs: ${order.notes}<br/>` : ""}
         {orders.length === 0 ? (
           <div
             style={{
-              color: "rgba(255,255,255,.75)",
+              color: "#6b5f6f",
               fontWeight: 700,
               padding: 10,
             }}
@@ -469,7 +469,7 @@ ${order.notes ? `Obs: ${order.notes}<br/>` : ""}
 
   return (
     <div style={{ padding: 12 }}>
-      <h2 style={{ color: "#fff", marginBottom: 12 }}>Pedidos (ao vivo)</h2>
+      <h2 style={{ color: "#111827", marginBottom: 12 }}>Pedidos ao vivo</h2>
 
       <div
         style={{

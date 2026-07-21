@@ -1,0 +1,370 @@
+
+.adminPage {
+  min-height: 100vh;
+  background: #f4f1ed;
+  color: #111827;
+}
+
+.hero {
+  background: #102c1f;
+  color: #fff;
+  padding: 28px 16px 42px;
+}
+
+.heroInner {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.adminLogo {
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  object-fit: cover;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #f3d45b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.dangerButton,
+.successButton,
+.outlineButton,
+.primaryButton,
+.ghostButton,
+.deleteButton {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.dangerButton { background: #cf2e36; color: #fff; }
+.successButton { background: #147b43; color: #fff; }
+.primaryButton { background: #147b43; color: #fff; width: 100%; }
+.outlineButton { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.45); }
+.ghostButton { background: #fff; color: #111827; border: 1px solid #e7dfd8; }
+.deleteButton { background: #fff; color: #d11f2a; border: 1px solid #f0dedf; }
+
+.shell {
+  width: min(980px, calc(100% - 20px));
+  margin: -22px auto 0;
+  padding-bottom: 36px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #e5ded7;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 14px 34px rgba(35, 24, 16, .08);
+}
+
+.softBox {
+  background: #fbfaf7;
+  border: 1px solid #e7dfd8;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.statusGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 24px 6px;
+}
+
+.statCard {
+  background: #fbfaf7;
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid #eee7df;
+}
+
+.statValue {
+  color: #08743f;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.statLabel {
+  margin-top: 8px;
+  color: #59645d;
+  font-size: 14px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.kicker {
+  margin: 22px 0 4px;
+  color: #007b42;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.helperText {
+  color: #59645d;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.formCard {
+  background: #fbfaf7;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #eee7df;
+  margin-bottom: 18px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.twoCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid #e1d9d2;
+  background: #fff;
+  color: #111827;
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: 16px;
+  outline: none;
+}
+
+.textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: #147b43;
+  box-shadow: 0 0 0 3px rgba(20, 123, 67, .12);
+}
+
+.uploadBox {
+  border: 1px dashed #cfc5bc;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+}
+
+.uploadLabel {
+  display: block;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.previewRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.previewImage {
+  width: 62px;
+  height: 62px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e7dfd8;
+}
+
+.productList {
+  display: grid;
+  gap: 0;
+}
+
+.productRow {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 6px;
+  border-bottom: 1px solid #ece5df;
+}
+
+.productRowInactive {
+  opacity: .55;
+}
+
+.productThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 9px;
+  object-fit: cover;
+  background: #eee;
+}
+
+.productName {
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.productMeta {
+  margin-top: 4px;
+  color: #59645d;
+  font-size: 13px;
+}
+
+.rowActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.optionGroups {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.optionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #ece5df;
+  padding: 10px 0;
+}
+
+.badgeOpen,
+.badgeClosed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+}
+.badgeOpen { color: #08743f; }
+.badgeClosed { color: #bd1f2d; }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.publicStatus {
+  margin: 0 0 14px;
+  background: rgba(255,255,255,.75);
+  border: 1px solid rgba(122,31,184,.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #111827;
+  box-shadow: 0 10px 22px rgba(122,31,184,.06);
+}
+.publicStatusTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.publicStatusHours,
+.publicPromo {
+  margin-top: 6px;
+  color: #6f6674;
+  font-size: 13px;
+}
+.publicPromo {
+  color: #7a1fb8;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .heroInner,
+  .brandRow {
+    align-items: flex-start;
+  }
+  .heroInner {
+    flex-direction: column;
+  }
+  .heroActions {
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+  }
+  .heroActions > * {
+    flex: 1;
+  }
+  .panel {
+    padding: 18px;
+  }
+  .statusGrid,
+  .statsGrid,
+  .twoCols {
+    grid-template-columns: 1fr;
+  }
+  .productRow {
+    grid-template-columns: 48px 1fr;
+  }
+  .rowActions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .heroTitle {
+    font-size: 24px;
+  }
+}

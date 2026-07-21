@@ -6,7 +6,12 @@ export async function GET() {
     (await prisma.storeSettings.findUnique({ where: { id: 1 } })) ??
     (await prisma.storeSettings.create({ data: { id: 1, isOpen: true } }));
 
-  return NextResponse.json({ ok: true, isOpen: row.isOpen });
+  return NextResponse.json({
+    ok: true,
+    isOpen: row.isOpen,
+    openHours: row.openHours || "18h as 23h30",
+    promotionText: row.promotionText || "",
+  });
 }
 
 export async function POST(req: Request) {
@@ -19,5 +24,10 @@ export async function POST(req: Request) {
     update: { isOpen },
   });
 
-  return NextResponse.json({ ok: true, isOpen: row.isOpen });
+  return NextResponse.json({
+    ok: true,
+    isOpen: row.isOpen,
+    openHours: row.openHours || "18h as 23h30",
+    promotionText: row.promotionText || "",
+  });
 }

@@ -21,6 +21,12 @@ type Section = {
   items: MenuItem[];
 };
 
+type StoreStatus = {
+  isOpen: boolean;
+  openHours: string;
+  promotionText?: string;
+};
+
 type OptionItem = {
   id: string;
   type: string;
@@ -84,7 +90,7 @@ function brl(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-export default function MenuClient({ sections }: { sections: Section[] }) {
+export default function MenuClient({ sections, storeStatus }: { sections: Section[]; storeStatus: StoreStatus }) {
   const [options, setOptions] = useState<OptionItem[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [cartSummary, setCartSummary] = useState<CartSummary>({ qty: 0, subtotalCents: 0, productQtyById: {} });
@@ -144,6 +150,17 @@ export default function MenuClient({ sections }: { sections: Section[] }) {
               <div className={styles.subtitle}>Açaí, doces, a um clique</div>
             </div>
           </div>
+        </div>
+
+        <div className={styles.storeStatusBox}>
+          <div className={styles.storeStatusTop}>
+            <span className={storeStatus.isOpen ? styles.storeOpen : styles.storeClosed}>
+              <span className={styles.storeDot} />
+              Loja {storeStatus.isOpen ? "aberta" : "fechada"}
+            </span>
+            <span className={styles.storeHours}>{storeStatus.openHours}</span>
+          </div>
+          {storeStatus.promotionText ? <div className={styles.storePromo}>{storeStatus.promotionText}</div> : null}
         </div>
 
         {sections.map((sec, sectionIndex) => (
