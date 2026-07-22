@@ -170,6 +170,16 @@ export default function OrdersFeed() {
     await load();
   }
 
+  async function deleteOrder(orderId: string) {
+    if (!confirm("Excluir esse pedido?")) return;
+    await fetch("/api/admin/orders/status", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: orderId }),
+    });
+    await load();
+  }
+
   useEffect(() => {
     load();
     const t = setInterval(load, 5000);
@@ -194,7 +204,7 @@ export default function OrdersFeed() {
         </div>
 
         <div className={styles.orderCustomer}>{order.user.name || "Sem nome"}</div>
-        <div className={styles.orderPhone}>?? {order.user.phone}</div>
+        <div className={styles.orderPhone}>Tel: {order.user.phone}</div>
 
         <div className={styles.orderAddress}>
           <div><b>Bairro:</b> {order.user.neighborhood || "-"}</div>
@@ -229,7 +239,7 @@ export default function OrdersFeed() {
           {status === "novo" ? <button type="button" onClick={() => updateStatus(order.id, "preparo")} className={styles.warningButton}>Ir para preparo</button> : null}
           {status === "preparo" ? <button type="button" onClick={() => updateStatus(order.id, "finalizado")} className={styles.successButton}>Finalizar</button> : null}
           {status === "preparo" ? <button type="button" onClick={() => updateStatus(order.id, "novo")} className={styles.ghostButton}>Voltar</button> : null}
-          {status === "finalizado" ? <button type="button" onClick={() => updateStatus(order.id, "preparo")} className={styles.ghostButton}>Voltar para preparo</button> : null}
+          {status === "finalizado" ? <button type="button" onClick={() => deleteOrder(order.id)} className={styles.deleteButton}>Excluir pedido</button> : null}
           <button type="button" onClick={() => printOrder(order)} className={styles.ghostButton}>Imprimir comanda</button>
         </div>
       </article>
