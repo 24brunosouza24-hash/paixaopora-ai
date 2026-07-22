@@ -194,7 +194,7 @@ export default function CartDrawer({
     const onOpenCart = async () => {
       setCart(loadCart());
       syncProfileFromLocal();
-      setOpenCart(true);
+      setCartPanelOpen(true);
     };
 
     const onOpenProfile = async () => {
@@ -219,6 +219,11 @@ export default function CartDrawer({
     window.addEventListener("acai_cart_changed", onChanged as any);
     return () => window.removeEventListener("acai_cart_changed", onChanged as any);
   }, [enableGlobalUi]);
+
+  function setCartPanelOpen(next: boolean) {
+    setOpenCart(next);
+    window.dispatchEvent(new CustomEvent("acai_cart_panel_state", { detail: { open: next } }));
+  }
 
   function closeProfile() {
     setResumeCheckoutAfterProfile(false);
@@ -644,7 +649,7 @@ try {
     sendToWhatsApp(url, whatsAppTab);
 
     clearCart();
-    setOpenCart(false);
+    setCartPanelOpen(false);
   }
 
   const textBlack = { color: "#111" as const };
@@ -1168,7 +1173,7 @@ try {
             zIndex: 1000,
             padding: 14,
           }}
-          onClick={() => setOpenCart(false)}
+          onClick={() => setCartPanelOpen(false)}
         >
           <div
             style={{
@@ -1206,7 +1211,7 @@ try {
                   type="button"
                   aria-label="Fechar carrinho"
                   title="Fechar"
-                  onClick={() => setOpenCart(false)}
+                  onClick={() => setCartPanelOpen(false)}
                   style={{
                     width: 40,
                     height: 40,

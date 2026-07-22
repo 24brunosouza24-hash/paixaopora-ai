@@ -25,6 +25,7 @@ type StoreStatus = {
   isOpen: boolean;
   openHours: string;
   promotionText?: string;
+  promotionImageUrl?: string;
 };
 
 type OptionItem = {
@@ -95,21 +96,27 @@ export default function MenuClient({ sections, storeStatus }: { sections: Sectio
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [cartSummary, setCartSummary] = useState<CartSummary>({ qty: 0, subtotalCents: 0, productQtyById: {} });
   const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [cartPanelOpen, setCartPanelOpen] = useState(false);
 
   useEffect(() => {
     const updateCartSummary = () => setCartSummary(loadCartSummary());
     const updateProductPicker = (event: Event) => {
       setProductPickerOpen(Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open));
     };
+    const updateCartPanel = (event: Event) => {
+      setCartPanelOpen(Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open));
+    };
 
     updateCartSummary();
     window.addEventListener("acai_cart_changed", updateCartSummary);
     window.addEventListener("acai_product_picker_state", updateProductPicker as EventListener);
+    window.addEventListener("acai_cart_panel_state", updateCartPanel as EventListener);
     window.addEventListener("storage", updateCartSummary);
 
     return () => {
       window.removeEventListener("acai_cart_changed", updateCartSummary);
       window.removeEventListener("acai_product_picker_state", updateProductPicker as EventListener);
+      window.removeEventListener("acai_cart_panel_state", updateCartPanel as EventListener);
       window.removeEventListener("storage", updateCartSummary);
     };
   }, []);
@@ -169,8 +176,23 @@ export default function MenuClient({ sections, storeStatus }: { sections: Sectio
             </span>
             <span className={styles.storeHours}>{storeStatus.openHours}</span>
           </div>
-          {storeStatus.promotionText ? <div className={styles.storePromo}>{storeStatus.promotionText}</div> : null}
         </div>
+
+        {storeStatus.promotionText || storeStatus.promotionImageUrl ? (
+          <section className={styles.promoSection}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionBar} />
+              <h2 className={styles.sectionTitle}>{"Promo\u00e7\u00e3o"}</h2>
+            </div>
+            <article className={styles.promoCard}>
+              {storeStatus.promotionImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={styles.promoImage} src={storeStatus.promotionImageUrl} alt={"Promo\u00e7\u00e3o"} />
+              ) : null}
+              {storeStatus.promotionText ? <p className={styles.promoText}>{storeStatus.promotionText}</p> : null}
+            </article>
+          </section>
+        ) : null}
 
         {sections.map((sec, sectionIndex) => (
           <section key={sec.key} className={styles.section}>
@@ -224,7 +246,7 @@ export default function MenuClient({ sections, storeStatus }: { sections: Sectio
         ))}
       </div>
 
-      {cartSummary.qty > 0 && !productPickerOpen ? (
+      {cartSummary.qty > 0 && !productPickerOpen && !cartPanelOpen ? (
         <button
           className={styles.bottomCartBar}
           type="button"

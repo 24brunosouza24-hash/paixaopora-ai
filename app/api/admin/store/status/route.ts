@@ -22,6 +22,7 @@ export async function GET() {
     isOpen: row.isOpen,
     openHours: row.openHours || "18h as 23h30",
     promotionText: row.promotionText || "",
+    promotionImageUrl: row.promotionImageUrl || "",
   });
 }
 
@@ -31,11 +32,12 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => null);
-  const data: { isOpen?: boolean; openHours?: string; promotionText?: string | null } = {};
+  const data: { isOpen?: boolean; openHours?: string; promotionText?: string | null; promotionImageUrl?: string | null } = {};
 
   if (typeof body?.isOpen === "boolean") data.isOpen = body.isOpen;
   if (body?.openHours !== undefined) data.openHours = String(body.openHours || "").trim() || "18h as 23h30";
   if (body?.promotionText !== undefined) data.promotionText = String(body.promotionText || "").trim() || null;
+  if (body?.promotionImageUrl !== undefined) data.promotionImageUrl = String(body.promotionImageUrl || "").trim() || null;
 
   const updated = await prisma.storeSettings.upsert({
     where: { id: 1 },
@@ -44,6 +46,7 @@ export async function POST(req: Request) {
       isOpen: data.isOpen ?? true,
       openHours: data.openHours ?? "18h as 23h30",
       promotionText: data.promotionText ?? null,
+      promotionImageUrl: data.promotionImageUrl ?? null,
     },
     update: data,
   });
@@ -53,5 +56,6 @@ export async function POST(req: Request) {
     isOpen: updated.isOpen,
     openHours: updated.openHours || "18h as 23h30",
     promotionText: updated.promotionText || "",
+    promotionImageUrl: updated.promotionImageUrl || "",
   });
 }

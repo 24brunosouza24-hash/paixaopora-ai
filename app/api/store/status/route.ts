@@ -11,6 +11,7 @@ export async function GET() {
     isOpen: row.isOpen,
     openHours: row.openHours || "18h as 23h30",
     promotionText: row.promotionText || "",
+    promotionImageUrl: row.promotionImageUrl || "",
   });
 }
 
@@ -29,5 +30,6 @@ export async function POST(req: Request) {
     isOpen: row.isOpen,
     openHours: row.openHours || "18h as 23h30",
     promotionText: row.promotionText || "",
+    promotionImageUrl: row.promotionImageUrl || "",
   });
 }

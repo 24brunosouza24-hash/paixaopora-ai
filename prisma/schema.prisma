@@ -72,6 +72,7 @@ model StoreSettings {
   isOpen        Boolean  @default(true)
   openHours     String   @default("18h as 23h30")
   promotionText String?
+  promotionImageUrl String?
   updatedAt     DateTime @updatedAt
 }
 

@@ -55,6 +55,7 @@ export default async function AdminPage() {
             initialIsOpen={settings.isOpen}
             initialOpenHours={settings.openHours || "18h as 23h30"}
             initialPromotionText={settings.promotionText || ""}
+            initialPromotionImageUrl={settings.promotionImageUrl || ""}
           />
 
           <p className={styles.kicker}>Pedidos ao vivo</p>

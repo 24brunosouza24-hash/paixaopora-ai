@@ -164,6 +164,36 @@
   color: #111;
 }
 
+.promoSection {
+  margin: 4px 0 16px;
+}
+
+.promoCard {
+  width: min(100%, 460px);
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid rgba(122, 31, 184, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+}
+
+.promoImage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.promoText {
+  margin: 0;
+  padding: 12px 14px 14px;
+  color: #111;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
 /* ================================
    Grid
 ================================ */

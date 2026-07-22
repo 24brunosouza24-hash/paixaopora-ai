@@ -83,6 +83,7 @@ export default async function Page() {
         isOpen: settings.isOpen,
         openHours: settings.openHours || "18h as 23h30",
         promotionText: settings.promotionText || "",
+        promotionImageUrl: settings.promotionImageUrl || "",
       }}
     />
   );
