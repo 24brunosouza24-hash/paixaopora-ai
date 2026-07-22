@@ -67,6 +67,43 @@ function productPriceLabel(p: Product) {
   return first ? brl(first.priceCents) : "Sem preco";
 }
 
+
+async function imageFileToDataUrl(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Escolha uma imagem valida.");
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    throw new Error("Essa foto esta muito grande. Escolha uma imagem de ate 8 MB.");
+  }
+
+  const source = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Nao consegui ler essa foto."));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Nao consegui preparar essa foto."));
+    image.src = source;
+  });
+
+  const maxSize = 1200;
+  const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Nao consegui preparar essa foto.");
+
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
 const categoryOptions = [
   ["acai", "Acai"],
   ["sorvete", "Sorvete"],
@@ -127,14 +164,11 @@ export default function ProductTable({ initialProducts }: { initialProducts: Pro
   }
 
   async function uploadImage(file: File) {
-    const form = new FormData();
-    form.append("file", file);
     setUploading(true);
     try {
-      const r = await fetch("/api/admin/upload", { method: "POST", body: form });
-      const d = await r.json().catch(() => null);
-      if (!r.ok) return alert(d?.error || "Erro ao enviar foto");
-      setImageUrl(d.url || "");
+      setImageUrl(await imageFileToDataUrl(file));
+    } catch (error: any) {
+      alert(error?.message || "Erro ao preparar foto");
     } finally {
       setUploading(false);
     }
@@ -260,9 +294,10 @@ Isso apaga de vez.`)) return;
           <div className={styles.uploadBox}>
             <span className={styles.uploadLabel}>Foto do produto</span>
             <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadImage(file); }} />
-            {uploading ? <p className={styles.helperText}>Enviando foto...</p> : null}
+            {uploading ? <p className={styles.helperText}>Preparando foto...</p> : null}
             {imageUrl ? (
               <div className={styles.previewRow}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className={styles.previewImage} src={imageUrl} alt="Previa" />
                 <span className={styles.helperText}>Foto pronta para salvar.</span>
               </div>
@@ -288,10 +323,11 @@ Isso apaga de vez.`)) return;
         {list.length === 0 ? <p className={styles.helperText}>Nenhum produto cadastrado ainda.</p> : null}
         {list.map((p) => (
           <div key={p.id} className={`${styles.productRow} ${!p.isActive ? styles.productRowInactive : ""}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             {p.imageUrl ? <img className={styles.productThumb} src={p.imageUrl} alt={p.title} /> : <div className={styles.productThumb} />}
             <div>
               <div className={styles.productName}>{p.title}</div>
-              <div className={styles.productMeta}>{p.categoryTitle || p.category} ? {productPriceLabel(p)} {p.isActive ? "" : "? inativo"}</div>
+              <div className={styles.productMeta}>{p.categoryTitle || p.category} - {productPriceLabel(p)} {p.isActive ? "" : "- inativo"}</div>
             </div>
             <div className={styles.rowActions}>
               <button type="button" onClick={() => toggleProduct(p)} disabled={loadingId === p.id} className={styles.ghostButton}>

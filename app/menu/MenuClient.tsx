@@ -94,16 +94,22 @@ export default function MenuClient({ sections, storeStatus }: { sections: Sectio
   const [options, setOptions] = useState<OptionItem[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [cartSummary, setCartSummary] = useState<CartSummary>({ qty: 0, subtotalCents: 0, productQtyById: {} });
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
 
   useEffect(() => {
     const updateCartSummary = () => setCartSummary(loadCartSummary());
+    const updateProductPicker = (event: Event) => {
+      setProductPickerOpen(Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open));
+    };
 
     updateCartSummary();
     window.addEventListener("acai_cart_changed", updateCartSummary);
+    window.addEventListener("acai_product_picker_state", updateProductPicker as EventListener);
     window.addEventListener("storage", updateCartSummary);
 
     return () => {
       window.removeEventListener("acai_cart_changed", updateCartSummary);
+      window.removeEventListener("acai_product_picker_state", updateProductPicker as EventListener);
       window.removeEventListener("storage", updateCartSummary);
     };
   }, []);
@@ -154,9 +160,12 @@ export default function MenuClient({ sections, storeStatus }: { sections: Sectio
 
         <div className={styles.storeStatusBox}>
           <div className={styles.storeStatusTop}>
-            <span className={storeStatus.isOpen ? styles.storeOpen : styles.storeClosed}>
-              <span className={styles.storeDot} />
-              Loja {storeStatus.isOpen ? "aberta" : "fechada"}
+            <span className={styles.storeLabel}>
+              <span className={`${styles.storeDot} ${storeStatus.isOpen ? styles.storeDotOpen : styles.storeDotClosed}`} />
+              Loja{" "}
+              <strong className={storeStatus.isOpen ? styles.storeOpen : styles.storeClosed}>
+                {storeStatus.isOpen ? "aberta" : "fechada"}
+              </strong>
             </span>
             <span className={styles.storeHours}>{storeStatus.openHours}</span>
           </div>
@@ -215,7 +224,7 @@ export default function MenuClient({ sections, storeStatus }: { sections: Sectio
         ))}
       </div>
 
-      {cartSummary.qty > 0 ? (
+      {cartSummary.qty > 0 && !productPickerOpen ? (
         <button
           className={styles.bottomCartBar}
           type="button"

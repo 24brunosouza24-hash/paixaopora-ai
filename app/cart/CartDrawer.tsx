@@ -306,8 +306,13 @@ export default function CartDrawer({
   const extrasPaidTypes = ["cremes", "frutas", "toppings", "outros"].filter((t) => optionsByTypeFinal.has(t));
 
   // ===== abrir modal produto
+  function setProductModalOpen(next: boolean) {
+    setOpenProduct(next);
+    window.dispatchEvent(new CustomEvent("acai_product_picker_state", { detail: { open: next } }));
+  }
+
   function openAddProduct() {
-    setOpenProduct(true);
+    setProductModalOpen(true);
   }
 
   // carrega infos do produto ao abrir modal
@@ -468,7 +473,7 @@ export default function CartDrawer({
     }
 
     saveCart(current);
-    setOpenProduct(false);
+    setProductModalOpen(false);
     setCart(current);
   }
 
@@ -825,7 +830,7 @@ try {
             zIndex: 1000,
             padding: 14,
           }}
-          onClick={() => setOpenProduct(false)}
+          onClick={() => setProductModalOpen(false)}
         >
           <div
             style={{
@@ -1110,7 +1115,7 @@ try {
                 {/* BotÃµes */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
                   <button
-                    onClick={() => setOpenProduct(false)}
+                    onClick={() => setProductModalOpen(false)}
                     type="button"
                     style={{
                       flex: 1,
